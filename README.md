@@ -56,6 +56,13 @@ design-log/
     └── customization.md              # optional per-project adaptation
 ```
 
+## Credits
+
+The **Design-Log methodology** this skill implements originates with **Yoav Abrahami** (Wix Engineering):
+["Why I Stop Prompting and Start Logging: The Design-Log Methodology"](https://www.wix.engineering/post/why-i-stop-prompting-and-start-logging-the-design-log-methodology).
+
+This repo is an independent Claude Code skill packaging of that idea — research-driven, version-controlled design documentation that the AI reads before it writes code. Credit for the core concept goes to Yoav; any bugs in this implementation are mine.
+
 ## License
 
-Do whatever you want with it. Share freely.
+MIT — see [LICENSE](LICENSE). Do whatever you want with it. Share freely.
