@@ -24,6 +24,8 @@ Log-number selection:
 
 ### A1 — Check Existing Logs (MANDATORY — do not skip)
 
+> **Cost discipline:** A1 + A2 are pure retrieval. Dispatch an `explore` or `model="haiku"` subagent to do the scan/grep/pre-scan and return a findings summary; reason over that summary on your main model rather than reading every log and file on it. See SKILL.md § Model Routing.
+
 - Read `.agent/design-logs/INDEX.md` (and any archive index) first — these are the authoritative catalogs.
 - Identify the relevant domain folder(s) under `.agent/design-logs/` (e.g. `ui/`, `api/`, `documents/`, `email/`, `infrastructure/`, `security/`, `research/`, or project-specific equivalents) and list their contents — a top-level scan alone will miss everything.
 - **Grep log bodies** for 2–3 keywords from the user's request across all domain folders — filename triage is not enough.
@@ -83,6 +85,8 @@ Determine the technical/UX/architectural domain(s) the request falls into. Examp
 Not exhaustive — use judgment for the specific task.
 
 ### B2 — Research Sources (3+ minimum)
+
+> **Cost discipline:** Reading 3+ full sources is token-heavy. Run the searches/extraction in a `model="sonnet"` research subagent and fold back only its **distilled** findings (principles, patterns, anti-patterns) — avoid loading multiple full pages into your main context. See SKILL.md § Model Routing.
 
 Find and read substantive content from **at least 3 sources** across these tiers.
 

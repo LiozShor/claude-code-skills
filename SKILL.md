@@ -82,6 +82,17 @@ During Phases A, B, and C (Discovery, Research, Explore & Document) the planning
 
 Once the user approves via `ExitPlanMode`, execute the approved plan end-to-end, stopping only at the hard gates (merge to main, destructive ops, etc.).
 
+### Model Routing — Don't Spend Your Best Model on Gathering
+
+This skill is pinned to a strong model (`model: opus`) for **judgment** work (clarifying questions, design synthesis, the plan). Mechanical **gathering** should NOT run on that tier — delegate it. This cuts roughly half the run cost with no loss of plan quality:
+
+- **Phase A scan + pre-scan** → dispatch an `explore` or `model="haiku"` subagent to read `INDEX.md` (+ any archive index), grep log bodies, and pre-scan the codebase; reason over the returned summary instead of reading it all on the main model.
+- **Phase B research** → dispatch a `model="sonnet"` research subagent to read sources and return distilled principles/patterns/anti-patterns; do NOT pull 3+ full pages into the main context.
+- **Phase C exploration** → use `explore` / `model="haiku"` subagents for read-only file discovery; keep the design synthesis itself on the main model.
+- **Keep on the main model:** Phase A clarifying questions, the design write-up, the plan-mode plan, Phase D implementation decisions.
+
+(If you run a single-tier setup, skip this — it only helps when you can route subagents to cheaper models.)
+
 ### Phase A — Discovery
 
 **STOP. Do not implement anything.** Steps: A0 Branch Setup → A1 Check Existing Logs → A2 Light Codebase Pre-Scan → A3 Ask Clarifying Questions via `AskUserQuestion` (usually 5+) → A4 Wait for answers. Full procedure in `references/protocol-detail.md` § Phase A.
