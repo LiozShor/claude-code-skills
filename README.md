@@ -33,10 +33,12 @@ The artifact lives at `.agent/design-logs/NNN-description.md` (created automatic
 - A **git repo** (the skill checks branch state and won't implement on `main`).
 - A **web research tool** — works with any of:
   - **Built-in `WebSearch` + `WebFetch`** — always available, zero setup. ✅ default
-  - **Tavily MCP** — better multi-source web research, if you have it installed.
-  - **context7 MCP** — for library/framework/SDK/API docs, if you have it installed.
+  - **context7 MCP** — library/framework/SDK/API docs, if installed.
+  - **Exa MCP** — semantic/neural source discovery + deep research, if installed.
+  - **Tavily MCP** — general multi-source web search, if installed.
+  - **Firecrawl MCP** — full-page extraction / docs-site crawling, if installed.
 
-  The skill prefers an MCP tool when present and falls back to the built-ins otherwise — so it runs fine with nothing extra installed.
+  The skill prefers whichever MCP fits the job when present and falls back to the built-ins otherwise — so it runs fine with nothing extra installed.
 
 ## Customizing
 

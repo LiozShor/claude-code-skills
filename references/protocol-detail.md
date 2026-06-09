@@ -86,9 +86,11 @@ Not exhaustive — use judgment for the specific task.
 
 Find and read substantive content from **at least 3 sources** across these tiers.
 
-**Which tool to use** (use whichever you have installed; all are in `allowed-tools`):
+**Which tool to use** (use whichever you have installed; all are in `allowed-tools`; tool-name prefixes follow your own MCP server names):
 - **context7 MCP** — best for library/framework/SDK/API docs. `mcp__context7__resolve-library-id` (resolve a library name to its ID) → `mcp__context7__query-docs` (fetch current docs). Prefer this when the domain is a specific library/tool's API or config.
+- **Exa MCP** — semantic/neural discovery; best for finding the highest-quality writing on a topic rather than keyword matches. `mcp__exa__web_search_exa` (neural search), `mcp__exa__crawling_exa` (fetch a known URL), `mcp__exa__deep_researcher_start` / `mcp__exa__deep_researcher_check` (start an agentic deep-research task and poll for the report).
 - **Tavily MCP** — best for general multi-source web research. `mcp__tavily__tavily_search` (ranked results with snippets; one query per call, issue parallel calls for independent searches) and `mcp__tavily__tavily_extract` (fetch full URL content as Markdown; accepts a `urls` array for batch).
+- **Firecrawl MCP** — full-page extraction, JS-heavy sites, crawling a whole docs site. `mcp__firecrawl__firecrawl_search` (search + scrape), `mcp__firecrawl__firecrawl_scrape` (clean markdown from one page), `mcp__firecrawl__firecrawl_crawl` (crawl linked pages), `mcp__firecrawl__firecrawl_extract` (structured extraction).
 - **Built-in `WebSearch` + `WebFetch`** — always available, zero setup. `WebSearch` to find sources, `WebFetch` to read a page. The universal fallback when no MCP is installed.
 
 **Tier 1 — Books:** Find the 1–2 most respected books in the identified domain. Search for core concepts, chapter summaries, key takeaways.

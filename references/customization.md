@@ -10,7 +10,7 @@ This skill works out of the box with **zero setup** — drop it in and run `/des
 | Log filename | `NNN-kebab-case-description.md` (sequential) | protocol-detail.md § Naming |
 | Catalog file | `.agent/design-logs/INDEX.md` | Phase A1, C, E |
 | Running TODO file | `.agent/current-status.md` | Phase D housekeeping, E |
-| Research tool | context7 / Tavily MCP if installed, else `WebSearch` + `WebFetch` | Phase B2 |
+| Research tool | context7 / Exa / Tavily / Firecrawl MCP if installed, else `WebSearch` + `WebFetch` | Phase B2 |
 | Git workflow | your project's standard commit/push flow | Phase D |
 
 If those defaults are fine, you're done — no edits needed. The `.agent/design-logs/` and `.agent/current-status.md` files are created on first use.
@@ -19,7 +19,7 @@ If those defaults are fine, you're done — no edits needed. The `.agent/design-
 
 **1. Change where logs live.** Prefer `docs/design/` or `.claude/design-logs/`? Find-and-replace `.agent/design-logs/` in `SKILL.md` + `references/protocol-detail.md` + `assets/design-log-template.md`. Same for `.agent/current-status.md`.
 
-**2. Use your own research tool.** Phase B2 uses context7 MCP (library docs) or Tavily MCP (general web) when present and falls back to the built-in `WebSearch`/`WebFetch` otherwise. If you have a dedicated research skill/subagent, mention it in the "Optional delegation" note in `protocol-detail.md` § B2. If you want to *force* a specific MCP, edit `allowed-tools` in `SKILL.md` to add/remove its tool names.
+**2. Use your own research tool.** Phase B2 picks by job — context7 (library docs), Exa (semantic discovery / deep research), Tavily (general web), Firecrawl (extraction / crawling) — when present, and falls back to the built-in `WebSearch`/`WebFetch` otherwise. The `mcp__exa__*` / `mcp__firecrawl__*` etc. prefixes assume your MCP servers are named `exa` / `firecrawl`; if yours differ, adjust the tool names in `allowed-tools` (`SKILL.md`) and `protocol-detail.md` § B2 to match — wrong names silently fail. If you have a dedicated research skill/subagent, mention it in the "Optional delegation" note in `protocol-detail.md` § B2.
 
 **3. Wire in a git/commit skill.** This skill defers to "your project's standard git workflow" for all commit/push/merge ops. If you have a dedicated git skill (e.g. one that enforces conventional commits or a branch-guard), name it in `protocol-detail.md` § Phase D housekeeping and add it to `allowed-tools` via `Skill`.
 

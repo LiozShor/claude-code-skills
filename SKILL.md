@@ -3,7 +3,7 @@ name: design-log
 description: 'Plan non-trivial features, fixes, refactors, UI/workflow changes before coding — clarify, research, get approval (Stop & Think protocol).'
 model: opus
 disable-model-invocation: true
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, mcp__tavily__tavily_search, mcp__tavily__tavily_extract, mcp__context7__resolve-library-id, mcp__context7__query-docs, Task, Skill, EnterPlanMode, ExitPlanMode, AskUserQuestion
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, mcp__tavily__tavily_search, mcp__tavily__tavily_extract, mcp__exa__web_search_exa, mcp__exa__crawling_exa, mcp__exa__deep_researcher_start, mcp__exa__deep_researcher_check, mcp__firecrawl__firecrawl_search, mcp__firecrawl__firecrawl_scrape, mcp__firecrawl__firecrawl_crawl, mcp__firecrawl__firecrawl_extract, mcp__context7__resolve-library-id, mcp__context7__query-docs, Task, Skill, EnterPlanMode, ExitPlanMode, AskUserQuestion
 ---
 
 # Design Log Skill
@@ -92,12 +92,14 @@ Once the user approves via `ExitPlanMode`, execute the approved plan end-to-end,
 
 > **HARD GATE — DATE FIRST:** Before any research/web call, run `Bash` with `date +%Y-%m-%d` to anchor "current" in real time. The session's date context can be stale or absent. Pass the fetched date into recency-dependent queries ("as of YYYY-MM-DD", "latest stable", "deprecated in YYYY"). Do NOT rely on training-data dates or assumed year.
 
-> **Research tool (use whichever you have):** Read 3+ sources using any of these, in order of preference for the task:
-> - **context7 MCP** (`mcp__context7__resolve-library-id` → `mcp__context7__query-docs`) — best for library/framework/SDK/API docs, if installed.
-> - **Tavily MCP** (`mcp__tavily__tavily_search` / `mcp__tavily__tavily_extract`) — best for general multi-source web research, if installed.
+> **Research tool (use whichever you have):** Read 3+ sources using any of these, picked by job. Tool-name prefixes follow your own MCP server names.
+> - **context7 MCP** (`mcp__context7__resolve-library-id` → `mcp__context7__query-docs`) — library/framework/SDK/API docs.
+> - **Exa MCP** (`mcp__exa__web_search_exa`, `deep_researcher_start`/`deep_researcher_check`, `crawling_exa`) — semantic/neural source discovery + agentic deep-research; best for "find the best writing on X".
+> - **Tavily MCP** (`mcp__tavily__tavily_search` / `mcp__tavily__tavily_extract`) — general multi-source web search + extraction.
+> - **Firecrawl MCP** (`mcp__firecrawl__firecrawl_search`/`firecrawl_scrape`/`firecrawl_crawl`/`firecrawl_extract`) — full-page extraction, JS-heavy sites, crawling a whole docs site.
 > - **Built-in `WebSearch` + `WebFetch`** — always available, zero setup; the universal fallback.
 >
-> All four tool names are in `allowed-tools`. If an MCP isn't installed it simply won't be callable — fall back to the built-ins. Any path satisfies Phase B.
+> All names are in `allowed-tools`. If an MCP isn't installed it simply won't be callable — fall back to the built-ins. Any path satisfies Phase B.
 
 ### Phase C — Explore & Document
 
