@@ -1,0 +1,13 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "figma-design-not-visualize",
+  "skill": "visualize",
+  "query": "Design a landing page hero in Figma for our new SaaS product, pulling components from our design system.",
+  "expected_behavior": [
+    "Does NOT trigger the visualize skill",
+    "Routes to figma-generate-design or figma-use instead",
+    "Recognizes 'Figma', 'design system', and 'components' as Figma-domain signals, not HTML-visualization signals"
+  ],
+  "should_NOT_trigger": true,
+  "_notes": "Negative trigger. The word 'design' and 'landing page' could sound like visualize, but the Figma context routes elsewhere — this is exactly the overlap the non-trigger list in SKILL.md is meant to prevent."
+}

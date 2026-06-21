@@ -1,0 +1,14 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "dashboard-from-pasted-csv",
+  "skill": "visualize",
+  "query": "Here's our Q4 numbers as CSV — make me a dashboard:\nregion,revenue,growth\nNA,12400,18\nEMEA,8900,11\nAPAC,6200,24",
+  "expected_behavior": [
+    "Triggers the visualize skill",
+    "Reads references/skeleton.md before generating HTML",
+    "Writes one .html file to ~/Downloads/ with kebab-case name",
+    "Includes Chart.js with Chart.defaults.animation = false and theme-aware colors",
+    "Returns a file:// link in the response and opens the file in the browser"
+  ],
+  "should_NOT_trigger": false
+}

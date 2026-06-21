@@ -84,6 +84,14 @@ Determine the technical/UX/architectural domain(s) the request falls into. Examp
 
 Not exhaustive — use judgment for the specific task.
 
+### B0.5 — Check the Research Index (cache hit = delta research only)
+
+Before any search, read `.agent/design-logs/research-index.md` (if you maintain one):
+
+- **Entry < 90 days old for this domain** → do **delta research only**: 1 targeted search asking "what changed since [date] / what didn't the prior log cover for this specific task?", and cite the prior log in Section 3 (`**Prior research:** DL-NNN ([domain], YYYY-MM-DD) — delta only`).
+- **Entry > 90 days old** → re-validate the key claims (a quick search confirming the principles still hold) before reusing them, then proceed with whatever delta research the task needs.
+- **No entry / file missing** → full B2 below.
+
 ### B2 — Research Sources (3+ minimum)
 
 > **Cost discipline:** Reading 3+ full sources is token-heavy. Run the searches/extraction in a `model="sonnet"` research subagent and fold back only its **distilled** findings (principles, patterns, anti-patterns) — avoid loading multiple full pages into your main context. See SKILL.md § Model Routing.
@@ -117,6 +125,10 @@ Synthesize research into actionable findings (documented in Section 3 of the des
 - **Patterns** we should use (with brief description of how).
 - **Anti-patterns** to avoid (and why they're tempting but wrong for us).
 - **Deviations** — if a source recommends something that doesn't fit our constraints, note the recommendation AND why we're deviating.
+
+**Update the research index:** after research, upsert the domain row in `.agent/design-logs/research-index.md` — domain, log number(s), today's date, a 1-line principles summary, top 1–3 sources. If the file doesn't exist, create it from `assets/research-index-template.md`. (Optional but recommended — it's what makes B0.5 cache hits possible on later logs.)
+
+**Cross-project principles (optional):** if a principle is genuinely project-agnostic (a domain truth, not tied to this codebase/stack) and your setup keeps a cross-project memory/notes store, save it there too so other projects benefit. Only reusable principles — don't store project-specific findings.
 
 ### Research Rules
 
@@ -234,3 +246,50 @@ When the user gives feedback during or after implementation, assess the type and
 - Numbering: Sequential (001, 002, 003...)
 - Casing: Lowercase with hyphens
 - Language: English only
+
+---
+
+## Lite Mode
+
+Triggered by `/design-log lite` (or a request for a "light/quick design log"). Same protocol, same hard gates — what shrinks is **volume**, never **gates**.
+
+| Phase | Full mode | Lite mode |
+|-------|-----------|-----------|
+| A0 Branch setup | Mandatory | **Mandatory — unchanged** |
+| A1 Existing logs | INDEX + archive + grep bodies + read related logs in full | INDEX + research-index check; read related logs only on a direct hit |
+| A2 Pre-scan | Bounded reuse scan | Same, but cap at the most obvious reuse candidates |
+| A3 Questions | Usually 5+ | **2–3 decision-shaping questions** (still via `AskUserQuestion`, still wait for answers) |
+| B Research | 3+ sources, 5–10 min | **1 source minimum**; a fresh research-index hit (<90 days) satisfies Phase B with **zero new searches** (cite the prior log) |
+| C Plan mode | `EnterPlanMode` first → DL file `[DRAFT]` → `ExitPlanMode` | **Unchanged — all three gates apply** |
+| Template | All sections fully filled | Sections 3–5 may be compressed to a few bullets each; Sections 1, 2, 6, 7 stay concrete |
+| D Implementation | Per approved plan + housekeeping | Unchanged |
+| E Test handoff | Mandatory | **Mandatory — unchanged** |
+
+**Never skipped in lite mode:** A0 branch setup, the `[DRAFT]` status, the `EnterPlanMode`/`ExitPlanMode` approval gate, saving the DL file, Phase E handoff. Lite mode is a smaller log, not a different protocol.
+
+---
+
+## Gotchas
+
+- Do not treat plan mode text as persistent documentation; always save the design log file.
+- Do not create a new log when an active related log should be extended; if creating a new one anyway, explain why.
+- Do not use filename-only triage for prior logs; grep bodies and read related logs in full.
+- Do not repeat old research verbatim; check the research index (B0.5), do targeted delta research, and cite the prior log.
+- Do not mark `[COMPLETED]` until every Section 7 validation item is checked off.
+- Do not patch INDEX.md or the DL file by hand when closing if your project has a close-design-log script (see `references/customization.md`) — run it so any PII/lint guards run and both files stay consistent.
+
+---
+
+## Evaluation Checklist
+
+Self-check after the skill runs. If any answer is "no" you skipped a phase:
+
+- [ ] **Phase A:** Asked decision-shaping clarifying questions via `AskUserQuestion` (not plain text), usually 5+ (2–3 in lite mode) unless prior context answered enough, and waited for answers?
+- [ ] **Phase A (HARD):** Ran the A1 relevance grep — task-derived search terms (incl. any non-English UI labels) across `INDEX.md` + any archive index + **all DL bodies**; read any related prior DL in full and cited it in the new DL's Related Logs; surfaced findings to the user before A3 questions. **A recency summary ("last N logs") alone = FAIL.**
+- [ ] **Phase A:** Codebase pre-scan done — existing solutions/reuse opportunities surfaced?
+- [ ] **Phase B:** 3+ research sources cited, OR a fresh research-index hit with delta research; time-boxed to 5–10 min? Research index updated afterward?
+- [ ] **Phase C:** First tool call was `EnterPlanMode` — no Glob/Grep/Read/Write happened before plan mode was active?
+- [ ] **Phase C:** Design log file written using the template at `assets/design-log-template.md`, status `[DRAFT]`, no template placeholders left?
+- [ ] **Phase C:** Exited via `ExitPlanMode` (the single approval gate) — not a plain-text "approve?" prompt?
+- [ ] **Phase D:** Status moved through `[BEING IMPLEMENTED]` → `[IMPLEMENTED — NEED TESTING]`; INDEX and status file updated; committed via your standard git workflow (e.g. the `git-ship` skill), not ad-hoc?
+- [ ] **Phase E:** All unchecked Section 7 items copied to the status file's "Active TODOs"; cost/notes line appended to Section 8; log marked `[COMPLETED]` only after all tests pass?

@@ -9,6 +9,7 @@ This skill works out of the box with **zero setup** — drop it in and run `/des
 | Where logs live | `.agent/design-logs/` | SKILL.md, protocol-detail.md, template |
 | Log filename | `NNN-kebab-case-description.md` (sequential) | protocol-detail.md § Naming |
 | Catalog file | `.agent/design-logs/INDEX.md` | Phase A1, C, E |
+| Research index (optional cache) | `.agent/design-logs/research-index.md` | Phase B0.5, B3 |
 | Running TODO file | `.agent/current-status.md` | Phase D housekeeping, E |
 | Research tool | context7 / Exa / Tavily / Firecrawl MCP if installed, else `WebSearch` + `WebFetch` | Phase B2 |
 | Git workflow | your project's standard commit/push flow | Phase D |

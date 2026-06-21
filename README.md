@@ -1,70 +1,49 @@
-# design-log — a "Stop & Think" planning skill for Claude Code
+# Claude Code Skills
 
-A reusable Claude Code skill that forces **research-driven design before coding**. Instead of jumping straight to implementation, it runs a 5-phase protocol — Discovery → Research → Explore & Document → Implement → Test Handoff — gated by a single approval and recorded in a persistent design-log file.
+A collection of reusable [Claude Code](https://docs.claude.com/en/docs/claude-code) skills for
+planning, research, version control, and working with Airtable, Tally, and HTML visualizations.
 
-Built on top of Claude Code's plan mode. One approval gate, one documented artifact per feature.
+Each skill is a self-contained folder with a `SKILL.md` (the router + instructions) and optional
+reference/asset files. They're written to be **portable** — no machine-specific paths, no hardcoded
+IDs or secrets. Where a skill needs project values (an Airtable base, an env key), it reads them from
+config/env and ships a `*.example` template.
+
+## The skills
+
+| Skill | What it does | Invoke / trigger |
+|-------|--------------|------------------|
+| **[design-log](design-log/)** | Research-driven **Stop & Think** planning protocol — clarify → research → plan-mode exploration → persistent design log → single approval gate → implement → test handoff. | `/design-log <task>` |
+| **[airtable](airtable/)** | Read/write Airtable records via curl (reads) and `pyairtable` (writes), with a schema gate that prevents the field-name-guessing 422s. | Mentions Airtable, a base, or `tbl…/rec…/fld…` IDs |
+| **[tally](tally/)** | Build and edit [Tally](https://tally.so) forms through the Tally MCP — blocks, pages, conditional logic, mentions/recall. | Mentions Tally, a form, or a form ID |
+| **[tech-researcher](tech-researcher/)** | Compare libraries/frameworks/tools and verify current APIs against live sources before choosing or implementing. | "X vs Y", "is it deprecated?", "latest API" |
+| **[find-session](find-session/)** | Search Claude Code's local session logs for a past conversation and return resume instructions. | "find the session where we…", "I closed my session" |
+| **[git-ship](git-ship/)** | A safe single entry point for git writes — branch guard, multi-tab/worktree safety, conventional commits, ask-before-push, worktree-safe merge. | "ship it", "commit", "push" |
+| **[visualize](visualize/)** | Turn conversation content or data into a self-contained single-file HTML visualization (deck, dashboard, one-pager, chart, etc.). | "visualize this", "make a deck/dashboard" |
 
 ## Install
 
-Drop the `design-log/` folder into your skills directory:
+Drop a skill folder into your skills directory:
 
-- **Per-project:** `<your-repo>/.claude/skills/design-log/`
-- **Global (all projects):** `~/.claude/skills/design-log/`
+- **Global (all projects):** `~/.claude/skills/<skill>/`
+- **Per-project:** `<your-repo>/.claude/skills/<skill>/`
 
-That's it. No build step, no config. Then in Claude Code run:
+Then invoke it by name (`/design-log`, `/visualize`, …) or let it trigger automatically from its
+description. Most skills need no setup; a few have a one-time config step documented in their `SKILL.md`:
 
-```
-/design-log add a rate limiter to the upload endpoint
-```
+- **airtable** — copy `airtable/config.example.env` → `config.env` and set your base/table IDs; set
+  `AIRTABLE_API_KEY` in your env.
+- **tech-researcher** — copy `tech-researcher/.env.example` → `.env` if you use key-based research MCPs.
+- **design-log** — works out of the box; see `design-log/references/customization.md` to adapt log
+  locations, research tools, or wire in a number-reservation / close script.
 
-## What it does
-
-1. **Discovery** — checks existing design logs, scans the codebase for reuse, asks you 5+ clarifying questions before touching anything.
-2. **Research** — reads 3+ sources on the relevant domain (resilience, search UX, concurrency, etc.) and extracts principles/patterns/anti-patterns.
-3. **Explore & Document** — enters plan mode, explores your code, writes a `[DRAFT]` design log, then asks for approval via plan mode's exit gate.
-4. **Implement** — only after approval. Tracks status, records deviations.
-5. **Test Handoff** — persists outstanding tests so nothing is lost between sessions.
-
-The artifact lives at `.agent/design-logs/NNN-description.md` (created automatically).
-
-## Requirements
-
-- **Claude Code** with plan mode (`EnterPlanMode` / `ExitPlanMode`).
-- A **git repo** (the skill checks branch state and won't implement on `main`).
-- A **web research tool** — works with any of:
-  - **Built-in `WebSearch` + `WebFetch`** — always available, zero setup. ✅ default
-  - **context7 MCP** — library/framework/SDK/API docs, if installed.
-  - **Exa MCP** — semantic/neural source discovery + deep research, if installed.
-  - **Tavily MCP** — general multi-source web search, if installed.
-  - **Firecrawl MCP** — full-page extraction / docs-site crawling, if installed.
-
-  The skill prefers whichever MCP fits the job when present and falls back to the built-ins otherwise — so it runs fine with nothing extra installed.
-
-## Customizing
-
-It works with zero config. To adapt log location, research tool, git workflow, or add log-number reservation for parallel sessions, see `references/customization.md`.
-
-## Files
-
-```
-design-log/
-├── SKILL.md                          # the protocol router + hard gates
-├── README.md                         # this file
-├── assets/
-│   └── design-log-template.md        # the Section 1–8 design-log template
-└── references/
-    ├── protocol-detail.md            # full step-by-step for each phase
-    ├── research-sources.md           # book/article/case-study tiers by domain
-    └── customization.md              # optional per-project adaptation
-```
+`config.env` and `.env` are gitignored — only the `*.example` templates are tracked.
 
 ## Credits
 
-The **Design-Log methodology** this skill implements originates with **Yoav Abrahami** (Wix Engineering):
-["Why I Stop Prompting and Start Logging: The Design-Log Methodology"](https://www.wix.engineering/post/why-i-stop-prompting-and-start-logging-the-design-log-methodology).
-
-This repo is an independent Claude Code skill packaging of that idea — research-driven, version-controlled design documentation that the AI reads before it writes code. Credit for the core concept goes to Yoav; any bugs in this implementation are mine.
+The **design-log** skill extends [Yoav Abrahami's Design-Log Methodology](https://github.com/yoavaa/design-log-methodology).
+The core principles are his; this package adds Claude Code plan-mode integration, a mandatory research
+phase, hard gates, and a test-handoff phase.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Do whatever you want with it. Share freely.
+MIT © Lioz Shor. See [LICENSE](LICENSE). For design-log derivatives, credit Yoav Abrahami's original methodology.

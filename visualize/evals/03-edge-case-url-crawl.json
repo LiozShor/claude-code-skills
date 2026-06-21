@@ -1,0 +1,15 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "visualize-from-url",
+  "skill": "visualize",
+  "query": "Visualize this article as a one-pager infographic: https://example.com/some-blog-post",
+  "expected_behavior": [
+    "Triggers the visualize skill",
+    "Uses WebFetch to crawl the URL and extract real content (no Lorem ipsum)",
+    "Picks one-pager / infographic type from the Visualization Types table",
+    "Starts from references/skeleton.md and adds extracted content into the YOUR CONTENT HERE block",
+    "Single .html file written to ~/Downloads/ with content drawn from the URL, not placeholders"
+  ],
+  "should_NOT_trigger": false,
+  "_notes": "Edge case: external content fetch + content-faithful visualization. Tests that the skill uses real source material, not generated filler."
+}

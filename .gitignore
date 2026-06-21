@@ -2,3 +2,10 @@
 Thumbs.db
 *.zip
 .agent/
+
+# Secrets — never commit real values; only *.example templates are tracked
+.env
+.env.local
+.env.*.local
+config.env
+*.skillfish.json
