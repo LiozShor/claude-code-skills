@@ -1,0 +1,13 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "negative-trigger-audit-existing",
+  "skill": "skills-build",
+  "query": "Can you audit my qa-test skill and tell me if it follows best practices?",
+  "files": [],
+  "expected_behavior": [
+    "Does NOT trigger skills-build — the user is asking to audit an EXISTING skill",
+    "Should route to skill-improver instead",
+    "If skills-build is mistakenly invoked, the When-this-does-not-trigger section redirects: 'Reviewing, auditing, or improving an existing skill → use skill-improver'"
+  ],
+  "should_NOT_trigger": true
+}

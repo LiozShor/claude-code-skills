@@ -1,0 +1,16 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "apply-safe-edits",
+  "skill": "skill-improver",
+  "query": "Improve the qa-test skill — fix any safe issues you find, but ask me before anything risky.",
+  "files": [],
+  "expected_behavior": [
+    "Triggers skill-improver in Safe-edit mode (mode 2)",
+    "Runs scripts/review-skill-structure.sh BEFORE editing to establish a baseline (pre-edit MISSING/OK counts)",
+    "Re-runs scripts/review-skill-structure.sh AFTER editing (workflow step 14 hard gate) and reports post-edit counts",
+    "Asks before any change in the Edit-approval list (expanding allowed-tools, deleting files, modifying scripts, renaming, splitting)",
+    "Adding a missing required frontmatter field (mode 4 / structural-defect repair) is applied without asking, with the inference recorded in the diagnosis",
+    "Final verdict caps at 'Needs minor cleanup' if any of: zero-MISSING fails, evaluation checklist fails, or any subfolder file is dead"
+  ],
+  "should_NOT_trigger": false
+}

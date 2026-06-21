@@ -1,0 +1,18 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "positive-trigger-create-new",
+  "skill": "skills-build",
+  "query": "I keep manually drafting changelog entries from git log every release — can you turn that into a skill?",
+  "files": [],
+  "expected_behavior": [
+    "Triggers skills-build (not skill-improver, not init)",
+    "Confirms the workflow passes the skill decision filter (repeated, multi-step, decision points)",
+    "Picks a lowercase kebab-case name and explains the choice",
+    "Copies assets/skill-template.md as the starting scaffold",
+    "Authors ≥3 evals in evals/ before declaring done (positive, negative, edge)",
+    "Runs scripts/validate-skill.sh AND ~/.claude/skills/skill-improver/scripts/review-skill-structure.sh as the hard gate (step 17)",
+    "Final deliverable lists evals/01-*.json, evals/02-*.json, evals/03-*.json in the file list",
+    "Does NOT mark the skill 'built' if any structure-script MISSING remains — downgrades to 'Draft' per exit criterion"
+  ],
+  "should_NOT_trigger": false
+}

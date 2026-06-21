@@ -1,0 +1,16 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "<short-eval-name-kebab-case>",
+  "skill": "<skill-name-must-match-frontmatter>",
+  "query": "<a realistic user prompt that should trigger this skill>",
+  "files": [
+    "<optional: paths to fixture files the eval depends on>"
+  ],
+  "expected_behavior": [
+    "<one specific, observable behavior — e.g. 'Reads SKILL.md before producing output'>",
+    "<another — e.g. 'Returns the filled-out skill-review-template.md'>",
+    "<another — e.g. 'Verdict is one of: Ready / Needs minor cleanup / Needs major refactor / Risky'>"
+  ],
+  "should_NOT_trigger": false,
+  "_notes": "Set should_NOT_trigger=true for negative-trigger evals (queries that sound similar but should route to a different skill). Author at least 1 negative eval per skill."
+}

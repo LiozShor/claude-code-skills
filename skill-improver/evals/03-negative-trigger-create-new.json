@@ -1,0 +1,13 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "negative-trigger-create-new",
+  "skill": "skill-improver",
+  "query": "Create a new skill that converts CSV files to JSON.",
+  "files": [],
+  "expected_behavior": [
+    "Does NOT trigger skill-improver — this is greenfield skill creation",
+    "Should route to skills-build instead",
+    "If skill-improver is mistakenly invoked, the When-this-does-not-trigger section should redirect: 'Creating a brand-new skill from scratch → use skills-build'"
+  ],
+  "should_NOT_trigger": true
+}

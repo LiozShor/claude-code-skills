@@ -1,0 +1,15 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "edge-case-vague-workflow",
+  "skill": "skills-build",
+  "query": "I want a skill that 'helps me be more productive when coding'.",
+  "files": [],
+  "expected_behavior": [
+    "Triggers skills-build (the user did ask to create a skill)",
+    "Applies the Skill decision filter and concludes the workflow is too vague — no concrete repeated steps, no decision points, no defined deliverables",
+    "Per gotcha at line 30 ('If the user asks for a skill but the workflow is too vague, create a minimal draft, mark assumptions explicitly, and do not pretend it is production-ready'): pushes back, asks for one concrete repeated workflow OR produces a minimal draft labeled 'Draft (needs concrete examples)'",
+    "Does NOT scaffold a fake-looking finished skill that papers over the vagueness",
+    "Output explicitly notes the missing inputs in the Notes section per the output-format template"
+  ],
+  "should_NOT_trigger": false
+}

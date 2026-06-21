@@ -1,0 +1,15 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "review-only-existing-skill",
+  "skill": "skill-improver",
+  "query": "Can you audit my qa-test skill and tell me if it follows best practices?",
+  "files": [],
+  "expected_behavior": [
+    "Triggers skill-improver (not skills-build, not review)",
+    "Runs scripts/review-skill-structure.sh against the target SKILL.md before producing findings",
+    "Defaults to review-only mode since the user said 'audit' not 'fix'",
+    "Returns the filled-out assets/skill-review-template.md including the ## Structural check field with real numbers",
+    "Verdict is one of: Ready / Needs minor cleanup / Needs major refactor / Risky"
+  ],
+  "should_NOT_trigger": false
+}
