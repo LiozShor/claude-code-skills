@@ -37,6 +37,9 @@ description. Most skills need no setup; a few have a one-time config step docume
 - **tech-researcher** — copy `tech-researcher/.env.example` → `.env` if you use key-based research MCPs.
 - **design-log** — works out of the box; see `design-log/references/customization.md` to adapt log
   locations, research tools, or wire in a number-reservation / close script.
+- **skills-build + skill-improver** — install **both together**: `skills-build`'s validation hard-gate
+  and eval template reuse `skill-improver`'s `scripts/review-skill-structure.sh` and
+  `assets/eval-template.json`. Installing `skills-build` alone leaves its quality gate non-functional.
 
 `config.env` and `.env` are gitignored — only the `*.example` templates are tracked.
 

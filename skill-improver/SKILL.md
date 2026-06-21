@@ -150,7 +150,7 @@ Fill out `assets/skill-review-template.md` and return it. The template covers: v
 ## Assets
 
 - `assets/skill-review-template.md` — fill this out for review-only output (workflow step 11).
-- `assets/eval-template.json` — canonical structure for skill evals (one positive + one negative + one edge-case per skill, ≥3 total per Anthropic spec).
+- `assets/eval-template.json` — canonical structure for skill evals (one positive + one negative + one edge-case per skill, ≥3 total — per Anthropic's skill-authoring best practices; evals are *recommended*, not part of the required SKILL.md spec, which mandates only `name` + `description`).
 
 ## Scripts
 

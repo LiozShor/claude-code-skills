@@ -37,6 +37,8 @@ Warning signs:
 
 The skill name must be lowercase, kebab-case, short, action-oriented when possible, and specific enough to describe one workflow.
 
+Per the Agent Skills spec, the `name` must also: be **≤64 characters**; contain **only lowercase letters, digits, and hyphens** (no consecutive `--`, no leading/trailing `-`); and **match the skill's parent directory name** exactly (folder `airtable/` ⇒ `name: airtable`). `review-skill-structure.sh` enforces all three.
+
 Good names:
 
 - `tech-research`
@@ -65,7 +67,7 @@ allowed-tools: Read, Grep
 ---
 ```
 
-The `description` is the most load-bearing field — it is what the model uses to decide whether to invoke the skill. It must include trigger phrases, task types, boundaries, AND an explicit non-trigger pointer to any sibling skill that overlaps.
+The `description` is the most load-bearing field — it is what the model uses to decide whether to invoke the skill. It must include trigger phrases, task types, boundaries, AND an explicit non-trigger pointer to any sibling skill that overlaps. Per the spec it must be **non-empty and ≤1024 characters**. `allowed-tools` is optional and experimental — set it to the minimum tools needed; the spec defines it as a space-separated list, though Claude Code also accepts commas.
 
 Bad description:
 

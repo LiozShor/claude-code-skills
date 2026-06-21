@@ -52,6 +52,8 @@ Do not create a skill when a `CLAUDE.md`/`AGENTS.md` rule covers it, when it is 
 
 ## Workflow
 
+**Eval-driven order (Anthropic best practice):** before fleshing out the body, sketch the 3 eval scenarios (positive / negative / edge) from real failure examples. Anthropic's skill-authoring guide recommends building evaluations *before* writing extensive documentation, so the skill targets real gaps rather than imagined ones. You finalize the eval JSON at step 15, but decide what they must test up front.
+
 1. Identify the repeated workflow and confirm it passes the decision filter.
 2. Pick a lowercase kebab-case name (see `references/skill-design-reference.md` for naming rules).
 3. Copy `assets/skill-template.md` as the starting `SKILL.md` scaffold.
@@ -70,6 +72,10 @@ Do not create a skill when a `CLAUDE.md`/`AGENTS.md` rule covers it, when it is 
 16. Run `bash scripts/validate-skill.sh <path>/SKILL.md` to confirm structural soundness.
 17. **Hard gate.** Run `bash ~/.claude/skills/skill-improver/scripts/review-skill-structure.sh <path>/SKILL.md`. If any MISSING remains, the skill is **not built**. Either fix the section or downgrade the deliverable to "Draft (incomplete)" with structural failures listed at the top of the output.
 18. Review for scope creep and remove generic filler.
+
+## Dependency
+
+Steps 15 and 17 reuse `skill-improver`'s shared assets — `~/.claude/skills/skill-improver/assets/eval-template.json` and `~/.claude/skills/skill-improver/scripts/review-skill-structure.sh`. If `skill-improver` is **not** installed, the step-17 hard gate and the eval-template reference break. Install both skills together, or vendor copies of those two files into this skill and update the paths in steps 15 and 17.
 
 ## Decision gates
 
