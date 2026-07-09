@@ -1,0 +1,15 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "commit-and-push-feature",
+  "skill": "git-ship",
+  "query": "Ship it — commit these changes and push to the branch.",
+  "files": [],
+  "expected_behavior": [
+    "Checks the current branch is not main/master before committing",
+    "Reviews the diff for foreign/unrelated hunks before staging",
+    "Generates a conventional commit message (type(scope): description)",
+    "Asks for explicit confirmation before pushing"
+  ],
+  "should_NOT_trigger": false,
+  "_notes": "Positive trigger: explicit 'ship it' + commit/push request."
+}

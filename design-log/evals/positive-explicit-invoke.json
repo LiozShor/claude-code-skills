@@ -1,0 +1,15 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "positive-explicit-invoke",
+  "skill": "design-log",
+  "query": "/design-log I want to add a reminder-email escalation flow to a client portal — clients who haven't uploaded docs after 7 days get a second email with a different tone.",
+  "files": [],
+  "expected_behavior": [
+    "Dispatches the Pre-Phase-A relevance grep to an explore/haiku subagent with task-derived search terms (including Hebrew UI labels) and surfaces a 'Related prior DLs' list",
+    "Asks Phase A clarifying questions via AskUserQuestion and waits — does not skip because the task 'seems specific'",
+    "Runs Bash date +%Y-%m-%d before any research MCP call, and uses Tavily/Exa/Firecrawl (not WebSearch/WebFetch)",
+    "Calls EnterPlanMode as the FIRST Phase C tool call, creates the DL file with [DRAFT] status inside plan mode, then ExitPlanMode as the single approval gate",
+    "Does not write any implementation code before ExitPlanMode approval"
+  ],
+  "should_NOT_trigger": false
+}

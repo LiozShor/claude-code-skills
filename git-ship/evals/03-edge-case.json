@@ -1,0 +1,14 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "on-main-branch-refuse",
+  "skill": "git-ship",
+  "query": "Commit my changes, I think I'm still on main.",
+  "files": [],
+  "expected_behavior": [
+    "Runs `git branch --show-current` before committing",
+    "If on main/master, refuses to commit and errors clearly instead of proceeding",
+    "Does not silently create a branch or bypass the guard"
+  ],
+  "should_NOT_trigger": false,
+  "_notes": "Edge case: triggers git-ship but must hit the branch guard decision gate and refuse rather than commit."
+}

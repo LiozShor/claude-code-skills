@@ -1,0 +1,15 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "abandoned-package-uncertain-sources",
+  "skill": "tech-researcher",
+  "query": "Is the npm package 'left-pad-router' still maintained and safe to add as a dependency for our routing layer?",
+  "files": [],
+  "expected_behavior": [
+    "Checks the official package registry (npm) for last publish date and maintenance signals",
+    "Applies the Decision gates: if the package appears abandoned or docs cannot be confirmed, stops and reports the uncertainty rather than guessing",
+    "Does not recommend the package on popularity alone if it looks unmaintained",
+    "States explicitly if it appears abandoned rather than staying silent about it"
+  ],
+  "should_NOT_trigger": false,
+  "_notes": "Edge case: maintenance-status / possibly-abandoned-package check exercises the Decision gates and Gotchas sections, not just the happy-path comparison flow."
+}

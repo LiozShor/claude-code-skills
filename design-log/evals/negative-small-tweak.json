@@ -1,0 +1,13 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "negative-small-tweak",
+  "skill": "design-log",
+  "query": "the submit button label says 'Send' but it should say 'Submit documents' — fix it",
+  "files": [],
+  "expected_behavior": [
+    "Does NOT invoke design-log — this is a single-line fully-specified tweak, explicitly listed in 'When this does not trigger'",
+    "Just makes the edit (microcopy skill may apply for the label wording)",
+    "No design log file is created, no plan mode, no clarifying questions"
+  ],
+  "should_NOT_trigger": true
+}

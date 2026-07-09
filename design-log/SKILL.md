@@ -2,59 +2,36 @@
 name: design-log
 description: 'Plan non-trivial features, fixes, refactors, UI/workflow changes before coding — clarify, research, get approval (Stop & Think protocol).'
 model: opus
-disable-model-invocation: true
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, mcp__tavily__tavily_search, mcp__tavily__tavily_extract, mcp__exa__web_search_exa, mcp__exa__crawling_exa, mcp__exa__deep_researcher_start, mcp__exa__deep_researcher_check, mcp__firecrawl__firecrawl_search, mcp__firecrawl__firecrawl_scrape, mcp__firecrawl__firecrawl_crawl, mcp__firecrawl__firecrawl_extract, mcp__context7__resolve-library-id, mcp__context7__query-docs, Task, Skill, EnterPlanMode, ExitPlanMode, AskUserQuestion
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__claude_ai_Tavily__tavily_search, mcp__claude_ai_Tavily__tavily_extract, mcp__claude_ai_Tavily__tavily_crawl, mcp__claude_ai_Tavily__tavily_map, mcp__exa__web_search_exa, mcp__exa__web_fetch_exa, mcp__exa__web_search_advanced_exa, mcp__firecrawl__firecrawl_search, mcp__firecrawl__firecrawl_scrape, mcp__firecrawl__firecrawl_crawl, mcp__firecrawl__firecrawl_extract, Agent, Skill, EnterPlanMode, ExitPlanMode, AskUserQuestion
 ---
 
 # Design Log Skill
 
-Generic "Stop & Think" protocol that combines **research-driven design** with Claude Code's plan mode. Research first, then code. One workflow, one approval gate, persistent documentation. Project-specific rules belong in your repo docs or in clearly labeled adaptation notes — not in this skill.
-
-> **Portability note:** This skill is self-contained. It works in any git repo with no extra setup. Optional integrations (Tavily MCP for research, custom git/subagent skills) are used *only if you have them installed* and degrade gracefully to built-in tools otherwise. See `references/customization.md` to adapt paths, the research tool, or the git workflow to your project.
+Generic "Stop & Think" protocol that combines **research-driven design** with Claude Code's plan mode. Research first, then code. One workflow, one approval gate, persistent documentation. Project-specific rules belong in repo docs or in clearly labeled adaptation notes inside this skill.
 
 ## How This Integrates With Plan Mode
 
-- **Plan mode** handles codebase exploration (reading files, searching code, understanding architecture).
-- **Research phase** handles domain knowledge gathering (books, articles, case studies) BEFORE codebase exploration.
-- **Design log** handles persistent documentation and status tracking across sessions.
-- **They share a single approval gate** via `ExitPlanMode` — no double-approval.
+Research (domain knowledge) comes BEFORE plan-mode codebase exploration; the design log file persists what plan mode would lose; both share a **single approval gate** via `ExitPlanMode` — no double-approval.
 
-## When This Triggers
+## When this triggers
 
-Use this skill when the user explicitly invokes `/design-log`, asks for a design log, requests stop-and-think planning, or asks for documented design before a non-trivial feature, bug fix, refactor, workflow change, UI change, automation, or architecture decision.
-
-Implicit use is appropriate only when the task clearly needs persistent design documentation before implementation. If the task is small and the user did not ask for `/design-log`, use the normal workflow instead.
+Use when the user explicitly invokes `/design-log`, asks for stop-and-think planning, or asks for documented design before a non-trivial feature, fix, refactor, workflow/UI change, automation, or architecture decision. Implicit use only when the task clearly needs persistent design documentation.
 
 ## When this does not trigger
 
-Not every task needs a design log. Skip for:
-
-- Single-line fixes, typos, small tweaks.
-- Tasks where the user gives very specific instructions with no ambiguity and does not explicitly invoke `/design-log`.
-- Pure research or exploration questions — answer them directly instead.
-- Routine implementation that is already covered by an existing `[APPROVED]` design log — extend the existing log instead of creating a new one.
-
-For these, just do the work directly — no plan mode, no design log. Even when skipping, if the task touches a non-trivial domain, consider a quick 2-minute research check before implementing.
+Skip for: single-line fixes and small tweaks; fully-specified unambiguous tasks where the user didn't invoke `/design-log`; pure research questions (use `tech-researcher` or `consult`); work already covered by an existing `[APPROVED]` log (extend that log instead). For these, just do the work — though a quick 2-minute research check is still wise for non-trivial domains.
 
 ## Required Inputs
 
-Before writing the design log, identify:
-
-- The project root and current branch/worktree state.
-- The requested change and the user's success criteria.
-- Relevant prior logs, unfinished logs, and prior research.
-- The domain(s) that need research.
-- The existing code paths, helpers, tests, docs, and architecture diagrams that may be reused.
-- Whether implementation should continue after approval or stop at the approved plan.
-
-If an input is missing, ask through `AskUserQuestion` unless existing logs, user instructions, or pre-scan findings already answer it.
+Before writing the design log, identify: project root + branch/worktree state; the requested change and success criteria; relevant prior logs and prior research (research index); the domain(s) needing research; reusable code paths/helpers/tests/docs/diagrams; whether to implement after approval or stop at the plan. If an input is missing, ask via `AskUserQuestion` unless logs, instructions, or pre-scan findings already answer it.
 
 ## Decision Gates
 
 Stop and wait when:
 
+- The Phase A relevance grep (Pre-Phase-A step 1 / A1) has not been run and related prior DLs surfaced to the user — do not proceed to A3 clarifying questions without it.
 - The user has not answered required Phase A questions.
-- Research is incomplete.
+- Tavily research is incomplete.
 - `EnterPlanMode` has not been called before Phase C exploration.
 - The design log has not been saved with `[DRAFT]` status.
 - `ExitPlanMode` approval has not been granted.
@@ -68,49 +45,48 @@ The protocol runs in five phases. Each phase summary below is enough to know wha
 
 ### Phase A Is Non-Negotiable When User Invokes `/design-log`
 
-If the user explicitly typed `/design-log` (or otherwise invoked this skill by name), Phase A clarifying questions are **mandatory** — "specific instructions" and "seems simple" are NOT valid reasons to skip. The user asked for the Stop & Think protocol; give them the Stop & Think protocol. Silently jumping to implementation is a protocol violation.
+If the user explicitly typed `/design-log` (or otherwise invoked this skill by name), Phase A clarifying questions are **mandatory** — Auto Mode, "specific instructions", and "seems simple" are NOT valid reasons to skip. The user asked for the Stop & Think protocol; give them the Stop & Think protocol. Silently jumping to implementation is a protocol violation.
 
 The "When this does not trigger" section above applies to deciding whether to invoke the skill in the first place — NOT to partially running it. If you run the skill, you run Phase A. If you believe the task genuinely doesn't warrant Phase A, say so out loud before proceeding: "Skipping Phase A questions because [specific reason] — proceed or ask questions anyway?" and wait for the user.
 
-### Planning Phases Come Before Any "Just Build It" Instinct
+### Auto Mode Activates Only After Approval
 
-During Phases A, B, and C (Discovery, Research, Explore & Document) the planning discipline takes priority over any "prefer action / minimize interruptions" instinct:
+Auto Mode's "prefer action over planning / minimize interruptions" directive applies **only to Phases D–E** — after `ExitPlanMode` approval. During Phases A–C it is effectively **suspended**: ask the Phase A questions and wait; do the Phase B research even if the task "seems simple"; exit plan mode and wait for approval — never self-approve. After approval, Auto Mode resumes: execute the plan end-to-end, stopping only at the hard gates (merge to main, destructive ops, etc.).
 
-- Phase A: ask decision-shaping clarifying questions via `AskUserQuestion`; wait for answers.
-- Phase B: do the research — do not skip because "the task seems simple".
-- Phase C: exit plan mode and wait for user approval — do not self-approve and proceed.
+### Model Routing — Don't Spend Opus on Gathering
 
-Once the user approves via `ExitPlanMode`, execute the approved plan end-to-end, stopping only at the hard gates (merge to main, destructive ops, etc.).
+This skill is pinned to Opus (frontmatter `model: opus`) for **judgment** work (clarifying questions, design synthesis, the plan). Mechanical **gathering** must NOT run on Opus — delegate it. This obeys the global model-routing rule and cuts ~50%+ of run cost with no loss of plan quality:
 
-### Model Routing — Don't Spend Your Best Model on Gathering
+- **Pre-Phase-A check** → the relevance grep / INDEX scan / unfinished-log report is gathering: dispatch `explore` or `model="haiku"`, reason over the summary. The dispatched prompt **must include the task-derived search terms** (incl. Hebrew UI labels) and **must return a "Related prior DLs" list** (number + title + status + 1-line relevance). Do NOT request a "highest number + last N logs" shortcut — that misses the relevant logs.
+- **Phase A scan + pre-scan** → dispatch an `explore` or `model="haiku"` subagent to read `INDEX.md` (+ any archive index), grep log bodies, and pre-scan the codebase. Cap: return ≤500 words, read at most ~15 files, conclusions only.
+- **Phase B research** → dispatch a `model="sonnet"` research subagent (or `tech-researcher`). Cap: 3–5 sources, return ≤700 words of distilled principles/patterns/anti-patterns — do NOT pull full pages into the Opus context.
+- **Phase C exploration** → use `explore` / `model="haiku"` subagents for read-only file discovery. Cap: return file paths + 1-line relevance each, not file contents. Keep the design synthesis itself on Opus.
+- **Keep on Opus:** Phase A clarifying questions, the design write-up, the plan-mode plan, Phase D implementation decisions.
+- **Summary-only rule:** subagents return conclusions, never raw file dumps or full page text — the design log file is the persistent artifact, not the conversation.
 
-This skill is pinned to a strong model (`model: opus`) for **judgment** work (clarifying questions, design synthesis, the plan). Mechanical **gathering** should NOT run on that tier — delegate it. This cuts roughly half the run cost with no loss of plan quality:
+**Fable 5 note (since 2026-06-09):** Fable 5 burns subscription quota ~2× faster than Opus 4.8 for the same tokens ($10/$50 vs $5/$25 per MTok weighting). The `model: opus` pin above is deliberate — it keeps this skill on Opus 4.8 even when the session model is Fable 5. Do NOT remove the pin or escalate to Fable 5 by default. When dispatching subagents while the session runs on Fable 5, an explicit `model=` is mandatory (haiku/sonnet per the rules above) — an unpinned dispatch would inherit Fable 5 and pay 2× for gathering. Reserve Fable 5 for the rare design problem where the user explicitly asks for it.
 
-- **Phase A scan + pre-scan** → dispatch an `explore` or `model="haiku"` subagent to read `INDEX.md` (+ any archive index), grep log bodies, and pre-scan the codebase; reason over the returned summary instead of reading it all on the main model.
-- **Phase B research** → dispatch a `model="sonnet"` research subagent to read sources and return distilled principles/patterns/anti-patterns; do NOT pull 3+ full pages into the main context.
-- **Phase C exploration** → use `explore` / `model="haiku"` subagents for read-only file discovery; keep the design synthesis itself on the main model.
-- **Keep on the main model:** Phase A clarifying questions, the design write-up, the plan-mode plan, Phase D implementation decisions.
+### Lite Mode (`/design-log lite`)
 
-(If you run a single-tier setup, skip this — it only helps when you can route subagents to cheaper models.)
+When the user types `/design-log lite` (or asks for a "light/quick design log"), run the same protocol with reduced volume: Phase A asks 2–3 clarifying questions (not 5+); Phase B needs 1 source minimum — a fresh research-index hit (<90 days) satisfies it with zero new searches; template Sections 3–5 may be compressed to a few bullets each. **All hard gates still apply:** branch setup (A0), `EnterPlanMode` before exploration, the DL file saved with `[DRAFT]` status, `ExitPlanMode` single approval, Phase E handoff. Per-phase deltas table in `references/protocol-detail.md` § Lite Mode.
 
 ### Phase A — Discovery
 
 **STOP. Do not implement anything.** Steps: A0 Branch Setup → A1 Check Existing Logs → A2 Light Codebase Pre-Scan → A3 Ask Clarifying Questions via `AskUserQuestion` (usually 5+) → A4 Wait for answers. Full procedure in `references/protocol-detail.md` § Phase A.
 
+> **A0 DL-number reservation (if your repo uses it):** some repos reserve the design-log number with a script that lives **outside the repo** (so it survives repo cleanups) — e.g. `~/.claude/scripts/reserve-dl-number.sh`. If your setup has one, run it from the repo root and do NOT improvise raw `git push` claims. Configure the script path and per-repo rules (branch rename vs `slice/*`, default branch) in `references/protocol-detail.md` § Phase A A0 — load it before reserving. If no script exists, fall back to the manual numbering in that reference.
+
 ### Phase B — Research
 
-**Mandatory.** B0 Fetch current date via `Bash` (`date +%Y-%m-%d`) BEFORE any research call → B1 Identify domain → B2 Read 3+ sources via your research tool → B3 Extract principles, patterns, anti-patterns, deviations into Section 3 of the log. Time-box 5–10 min. Full procedure + research rules + domain table in `references/protocol-detail.md` § Phase B.
+**Mandatory.** B0 Fetch current date via `Bash` (`date +%Y-%m-%d`) BEFORE any MCP call → B0.5 Check `.agent/design-logs/research-index.md` — a domain entry <90 days old means delta research only → B1 Identify domain → B2 Read 3+ sources via a research MCP — Tavily / Exa / Firecrawl (NOT `WebSearch`/`WebFetch`) → B3 Extract principles, patterns, anti-patterns, deviations into Section 3 of the log + upsert the research index. Time-box 5–10 min. Optional: delegate to `tech-researcher` for fast-moving technical domains. Full procedure + research rules + domain table in `references/protocol-detail.md` § Phase B.
 
-> **HARD GATE — DATE FIRST:** Before any research/web call, run `Bash` with `date +%Y-%m-%d` to anchor "current" in real time. The session's date context can be stale or absent. Pass the fetched date into recency-dependent queries ("as of YYYY-MM-DD", "latest stable", "deprecated in YYYY"). Do NOT rely on training-data dates or assumed year.
+> **HARD GATE — DATE FIRST:** Before calling Tavily (or any other MCP/research tool — `tech-researcher`, etc.), run `Bash` with `date +%Y-%m-%d` to anchor "current" in real time. The session's `currentDate` context can be stale or absent. Do NOT rely on training-data dates or assumed year. Then use the anchored date BOTH ways:
+> - **Set Tavily's structured filter parameters** — `start_date` (and/or `end_date` / `time_range`) computed from the anchored date. This is the lever that actually *filters out* stale pages. Putting a date in the query text alone only nudges ranking; it does NOT filter.
+> - **And** mention recency in the query text where useful ("as of YYYY-MM-DD", "latest stable", "deprecated in YYYY") and pick correct year filters (current year + prior year, not years recalled from memory).
 
-> **Research tool (use whichever you have):** Read 3+ sources using any of these, picked by job. Tool-name prefixes follow your own MCP server names.
-> - **context7 MCP** (`mcp__context7__resolve-library-id` → `mcp__context7__query-docs`) — library/framework/SDK/API docs.
-> - **Exa MCP** (`mcp__exa__web_search_exa`, `deep_researcher_start`/`deep_researcher_check`, `crawling_exa`) — semantic/neural source discovery + agentic deep-research; best for "find the best writing on X".
-> - **Tavily MCP** (`mcp__tavily__tavily_search` / `mcp__tavily__tavily_extract`) — general multi-source web search + extraction.
-> - **Firecrawl MCP** (`mcp__firecrawl__firecrawl_search`/`firecrawl_scrape`/`firecrawl_crawl`/`firecrawl_extract`) — full-page extraction, JS-heavy sites, crawling a whole docs site.
-> - **Built-in `WebSearch` + `WebFetch`** — always available, zero setup; the universal fallback.
->
-> All names are in `allowed-tools`. If an MCP isn't installed it simply won't be callable — fall back to the built-ins. Any path satisfies Phase B.
+> **Pick the research MCP by job** (NOT `WebSearch`/`WebFetch`): Exa = semantic source discovery + deep research · Tavily = ranked web search + extraction · Firecrawl = full-page/JS-heavy/site crawls. Per-tool breakdown in `references/protocol-detail.md` § Phase B B2.
+
+> **HARD GATE:** If you invoked `tech-researcher`, you MUST wait for its result before calling `EnterPlanMode`. Do NOT enter Phase C while tech-researcher is still running.
 
 ### Phase C — Explore & Document
 
@@ -121,11 +97,13 @@ Steps: enter plan mode → explore codebase + load architecture diagrams → cre
 
 ### Phase D — Implementation (After Approval Only)
 
-Steps: status → `[BEING IMPLEMENTED — DL-NNN]` → build per Proposed Solution → update Implementation Notes on deviations → status → `[IMPLEMENTED — NEED TESTING]` → housekeeping (update INDEX, `current-status.md`, architecture diagrams, commit/push, deploy if applicable). Full housekeeping checklist (NO auto-merge, do-not-delete-branch, do-not-edit-after-merge) in `references/protocol-detail.md` § Phase D.
+**Recommended:** Use `/subagent-driven-development` for implementation when the plan has independent tasks that can run in parallel.
+
+Steps: status → `[BEING IMPLEMENTED — DL-NNN]` → build per Proposed Solution → update Implementation Notes on deviations → status → `[IMPLEMENTED — NEED TESTING]` → housekeeping (INDEX, `current-status.md`, architecture diagrams, `git-ship` skill, deploy if applicable). Full housekeeping checklist (NO auto-merge, frontend release path, do-not-delete-branch, do-not-edit-after-merge) in `references/protocol-detail.md` § Phase D.
 
 ### Phase E — Test Handoff
 
-Collect unchecked Section 7 items → write to `current-status.md` Active TODOs in the documented format → mark log `[COMPLETED]` only when all Section 7 items pass. Patch status in both the DL file and `INDEX.md` when closing. Full procedure + format template in `references/protocol-detail.md` § Phase E.
+Collect unchecked Section 7 items → write to `current-status.md` Active TODOs in the documented format → mark log `[COMPLETED]` only when all Section 7 items pass. To close: run `bash .claude/workflows/close-design-log.sh <NNN>` — it patches status in both the DL file and INDEX.md, runs the PII guard, and stages the files. Once `[COMPLETED]`, merged, and (if deployed) live-verified, **delete the feature branch** via `git-ship`: verify-merged → detach-if-checked-out → `git branch -D` + `git push origin --delete` (Phase E step 5). Full procedure + format template in `references/protocol-detail.md` § Phase E.
 
 ### Handling Mid-Implementation Feedback
 
@@ -137,6 +115,8 @@ The persistent artifact this skill produces is a design log file at `.agent/desi
 
 Sections in order: 1. Context & Problem · 2. User Requirements (Q&A) · 3. Research (Domain, Sources, Principles, Patterns, Anti-Patterns, Verdict) · 4. Codebase Analysis · 5. Constraints & Risks · 6. Proposed Solution · 7. Validation Plan · 8. Implementation Notes.
 
+Two subsections are **conditional** — fill them when the change warrants, else mark them omitted/None: §6 *Boundary Contracts* (define the validated schema crossing each module/service/agent boundary — prevents cascading shape-drift errors on multi-module changes) and §7 *Trajectory / Acceptance Criteria* (verify the path, not just the final answer — for non-deterministic or high-stakes output like LLM text or recommendations).
+
 Status values (`[DRAFT]` / `[APPROVED]` / `[BEING IMPLEMENTED — DL-NNN]` / `[IMPLEMENTED — NEED TESTING]` / `[COMPLETED]` / `[DEPRECATED]`) and naming convention (`NNN-description.md`, sequential, lowercase-hyphens, English) are documented in `references/protocol-detail.md`.
 
 Do not leave template placeholders such as `[Question]`, `[Key takeaway]`, or `Test Case 1` in a real design log. Replace every placeholder with concrete project-specific content before calling `ExitPlanMode`.
@@ -144,7 +124,7 @@ Do not leave template placeholders such as `[Question]`, `[Key takeaway]`, or `T
 ## Critical Rules
 
 1. **NEVER implement before approval** — `[DRAFT]` means no coding.
-2. **ALWAYS ask clarifying questions first** — understanding before action. If the user invoked `/design-log` explicitly, this is non-negotiable. To skip, state the reason out loud and wait for confirmation.
+2. **ALWAYS ask clarifying questions first** — understanding before action. If the user invoked `/design-log` explicitly, Auto Mode does NOT override this. To skip, state the reason out loud and wait for confirmation.
 3. **ALWAYS research before designing** — knowledge before architecture.
 4. **ONE approval gate** — `ExitPlanMode` is the single approval for both plan and design log.
 5. **ALWAYS save a design log file** — plan mode is ephemeral, the log persists.
@@ -153,44 +133,44 @@ Do not leave template placeholders such as `[Question]`, `[Key takeaway]`, or `T
 
 ## Pre-Phase-A Check (when this skill is invoked)
 
-This skill has `disable-model-invocation: true` — it does NOT run automatically at session start. It runs only when the user types `/design-log` or otherwise invokes it by name. When invoked, before Phase A:
+This skill does NOT run automatically at session start. It runs when the user types `/design-log`, invokes it by name, or (rarely) when the task clearly needs persistent design documentation per "When this triggers". When invoked, before Phase A:
 
-1. Scan `.agent/design-logs/` for unfinished work.
-2. Report any `[APPROVED]` logs not marked `[COMPLETED]`.
-3. Summarize last 3 logs for context.
-4. Note domains already researched (for cumulative knowledge rule).
+1. **Relevance scan (PRIMARY, mandatory).** Derive 3–6 search terms from the task — symptom words, feature name, affected file/symbol, error string, **and any Hebrew UI label** — and grep them across `INDEX.md` + `ARCHIVE-INDEX.md` + **all DL bodies** (not just titles). Read in full any DL on the same feature / symptom / files and list them (number + title + status + 1-line relevance). This is how duplicates and prior decisions are found.
+2. **Unfinished-work check.** Report any `[APPROVED]` / `[BEING IMPLEMENTED]` logs not marked `[COMPLETED]` (conflict guard).
+3. Note domains already researched — read `research-index.md` (for the Phase B cache rule).
+
+> **Recency is NOT a discovery method.** "Summarize the last N logs" does NOT satisfy step 1 — the most recent logs are rarely the relevant ones. The relevance grep is required; do not substitute a recency summary for it.
+
+This check is gathering — per § Model Routing, dispatch it to `explore`/`model="haiku"` and reason over the summary.
 
 ## Gotchas
 
-- Do not treat plan mode text as persistent documentation; always save the design log file.
-- Do not let template placeholders survive into a real design log.
-- Do not create a new log when an active related log should be extended; if creating a new one anyway, explain why.
-- Do not use filename-only triage for prior logs; grep bodies and read related logs in full.
-- Do not let Phase A's light pre-scan become full Phase C exploration before `EnterPlanMode`.
-- Do not repeat old research verbatim; do targeted delta research and cite the prior log.
-- Do not bypass your project's standard git workflow for commit/push/merge operations.
-- Do not mark `[COMPLETED]` until every Section 7 validation item is checked off.
+Full list in `references/protocol-detail.md` § Gotchas — read when closing out a phase or when something feels off. The ones that bite most often:
+
+- Skipping Phase A questions because the task "seems simple" or Auto Mode is on — protocol violation; see § Phase A Is Non-Negotiable.
+- Exploring or writing the design log before `EnterPlanMode` — the first Phase C tool call must be `EnterPlanMode`.
+- Calling research MCPs before anchoring the date with `Bash date +%Y-%m-%d`, or putting the date only in query text instead of Tavily's structured filters.
+- Substituting a "last N logs" recency summary for the Phase A relevance grep.
+- Running gathering (grep/scan/research) on Opus or Fable 5 instead of dispatched haiku/sonnet subagents.
+
+## Evaluation checklist
+
+Run after the skill completes — any "no" means a skipped phase (full version: `references/protocol-detail.md` § Evaluation Checklist):
+
+- Was the Pre-Phase-A relevance grep dispatched and its "Related prior DLs" list surfaced?
+- Were Phase A clarifying questions asked and answered (or an explicit skip confirmed by the user)?
+- Was Phase B research done via a research MCP with a date-anchored filter, and the research index updated?
+- Was `EnterPlanMode` the first Phase C tool call, and the DL file saved as `[DRAFT]` inside plan mode?
+- Was `ExitPlanMode` the single approval gate — no coding before it, no second approval after it?
+- Are all template placeholders replaced with concrete content?
+- Did Phase E persist unchecked Section 7 items to `current-status.md` before any `[COMPLETED]` mark?
 
 ## References
 
-- `references/protocol-detail.md` — load when entering a phase and you need the full step-by-step procedure (Phase A0–A4, B1–B3, C, D housekeeping, E test handoff, mid-implementation feedback table, status values, naming convention).
+- `references/protocol-detail.md` — load when entering a phase and you need the full step-by-step procedure (Phase A0–A4, B0.5–B3 incl. research-index cache, C, D housekeeping, E test handoff + cost line, mid-implementation feedback table, status values, naming convention, Lite Mode deltas, Gotchas, Evaluation Checklist).
 - `references/research-sources.md` — load in Phase B (B2) when picking book recommendations and source tiers for the identified domain.
-- `references/customization.md` — read once when adapting this skill to your project (paths, research tool, git workflow, log-number automation).
 
 ## Assets
 
 - `assets/design-log-template.md` — fill this out as the persistent design log file in Phase C; read it for the canonical Section 1–8 structure rather than reproducing it inline.
-
-## Evaluation checklist
-
-Self-check after the skill runs. If any answer is "no" you skipped a phase:
-
-- [ ] **Phase A:** Asked decision-shaping clarifying questions via `AskUserQuestion` (not plain text), usually 5+ unless prior context answered enough, and waited for answers?
-- [ ] **Phase A:** Read `INDEX.md` (+ any archive index) + relevant domain folders, grepped log bodies for keywords, surfaced findings before asking questions?
-- [ ] **Phase A:** Codebase pre-scan done — existing solutions/reuse opportunities surfaced?
-- [ ] **Phase B:** 3+ research sources cited (via Tavily MCP if installed, else `WebSearch`/`WebFetch`); time-boxed to 5–10 min?
-- [ ] **Phase C:** First tool call was `EnterPlanMode` — no Glob/Grep/Read/Write happened before plan mode was active?
-- [ ] **Phase C:** Design log file written using the template at `assets/design-log-template.md`, status `[DRAFT]`?
-- [ ] **Phase C:** Exited via `ExitPlanMode` (the single approval gate) — not a plain-text "approve?" prompt?
-- [ ] **Phase D:** Status moved through `[BEING IMPLEMENTED]` → `[IMPLEMENTED — NEED TESTING]`; INDEX.md and `current-status.md` updated; changes committed?
-- [ ] **Phase E:** All unchecked Section 7 items copied to `current-status.md` "Active TODOs"; log marked `[COMPLETED]` only after all tests pass?
+- `assets/research-index-template.md` — seed for `.agent/design-logs/research-index.md` (per-project research cache); create from this in Phase B3 if the project doesn't have one yet.

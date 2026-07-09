@@ -1,0 +1,14 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "ambiguous-server-prefix",
+  "skill": "tally",
+  "query": "Add conditional logic to hide the 'business type' question unless the user selected 'self-employed' on our capital statement form.",
+  "files": [],
+  "expected_behavior": [
+    "Checks which server prefix is available (mcp__tally__* vs mcp__claude_ai_Tally__*) before assuming apply_logic is missing",
+    "Recognizes apply_logic is only exposed on the claude_ai_Tally server and does not incorrectly claim conditional logic is impossible",
+    "Follows load_form -> configure_blocks (default-hide) -> apply_logic -> save_form sequence"
+  ],
+  "should_NOT_trigger": false,
+  "_notes": "Edge case: tests the stale 'apply_logic UI-only' gotcha doesn't cause a wrong refusal, and the prefix-detection decision gate fires."
+}

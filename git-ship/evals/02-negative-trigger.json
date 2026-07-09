@@ -1,0 +1,14 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "status-check-not-a-write",
+  "skill": "git-ship",
+  "query": "What's the current git status and which branch am I on?",
+  "files": [],
+  "expected_behavior": [
+    "Does NOT invoke the git-ship skill",
+    "Runs read-only commands directly (git status, git branch --show-current)",
+    "No commit, push, or merge is attempted"
+  ],
+  "should_NOT_trigger": true,
+  "_notes": "Negative trigger: read-only git query. Read-only commands are explicitly exempt from this skill per 'When this does not trigger'."
+}

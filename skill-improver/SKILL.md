@@ -32,6 +32,7 @@ Use this skill when the user asks to:
 - Split an over-broad skill into focused ones.
 - Diagnose why a skill is not triggering or is triggering too often.
 - Refactor a skill without changing its purpose.
+- Audit the whole skill fleet at once ("which skills need work") — run `scripts/survey-skill-fleet.sh` first, then improve the worst offenders.
 
 ## When this does not trigger
 
@@ -55,7 +56,7 @@ If these are missing but the skill files are available, proceed in review-only m
 1. Locate the skill folder and confirm `SKILL.md` exists.
 2. Inspect the folder structure (which of `references/`, `assets/`, `scripts/` exist and what is in them).
 3. Run `bash scripts/review-skill-structure.sh <path>/SKILL.md` to mechanically detect missing sections.
-4. Read `SKILL.md` end-to-end. Note declared `name`, `description`, and `allowed-tools`.
+4. Read `SKILL.md` end-to-end. Note declared `name`, `description`, and `allowed-tools`. Cross-check body claims against the actual frontmatter — a body sentence asserting a field that is not set (e.g. claiming `disable-model-invocation: true` when the frontmatter lacks it) is a real defect, and so is a stale tool name in `allowed-tools` (e.g. subagent dispatch was `Task`, renamed to `Agent` — the old name silently breaks dispatch). Both found live on 2026-07-03 in `design-log`.
 5. Check whether the description is an agent-facing trigger spec (not human marketing copy) and whether overlapping sibling skills are explicitly named as non-triggers.
 6. Check for clear `When this triggers` and `When this does not trigger` sections.
 7. Check that the workflow is actionable, gates are surfaced as a list, output format is explicit, and gotchas are concrete (not decorative).
@@ -66,7 +67,8 @@ If these are missing but the skill files are available, proceed in review-only m
 12. **If edits are approved:** apply changes following the improvement workflow in `references/permission-review.md`. Ask before any change in the "Edit approval rules" list below.
 13. Re-read the changed files.
 14. **Hard gate.** Re-run `bash scripts/review-skill-structure.sh <path>/SKILL.md`. If any MISSING remains, the skill is **not improved**. Either fix the missing section or downgrade the verdict to "Needs major refactor" with structural failures listed as the top issue. Record pre-edit and post-edit MISSING/OK counts in the output.
-15. Summarize what changed using the post-edit output format.
+15. **Live trigger test (recommended when triggering/routing was part of the complaint, or a sibling overlaps).** Structural validity does NOT prove correct routing. Dispatch a fresh cheap subagent (`model="haiku"`) with the skill's positive-eval query phrased naturally (no slash command, no hints) plus a meta-instruction to report which skill it chose and why. If a sibling steals the trigger, the fix usually belongs on the SIBLING's description (vague or missing frontmatter acts as a keyword magnet) — sharpen it and name this skill as its non-trigger, then re-test. Reference incident: `n8n-mcp` had no frontmatter and stole `agent-debug`'s triggers on the word "n8n" (2026-07-03).
+16. Summarize what changed using the post-edit output format.
 
 ## Decision gates
 
@@ -145,7 +147,7 @@ Fill out `assets/skill-review-template.md` and return it. The template covers: v
 
 ## References
 
-- `references/permission-review.md` — load when classifying `allowed-tools`, diagnosing common SKILL.md problems, or running the full 15-step improvement sequence.
+- `references/permission-review.md` — load when classifying `allowed-tools`, diagnosing common SKILL.md problems, or running the full 16-step improvement sequence.
 
 ## Assets
 
@@ -156,6 +158,7 @@ Fill out `assets/skill-review-template.md` and return it. The template covers: v
 
 - `scripts/review-skill-structure.sh` — run on the target SKILL.md (workflow step 3 + step 14 hard gate) to mechanically detect missing frontmatter fields, required sections, length-budget violations, dead subfolder files, empty headings, frontmatter-spec violations (name/description/voice), and eval coverage.
 - `scripts/list-skill-evals.sh` — fleet-wide eval coverage survey across `~/.claude/skills/`. Run when the user asks "which skills have evals" or before a periodic skill-fleet audit.
+- `scripts/survey-skill-fleet.sh` — fleet-wide STRUCTURE survey: runs `review-skill-structure.sh` on every skill under a directory (default `~/.claude/skills`) and prints a summary table sorted by MISSING count. Run when the user asks to audit all skills, "which skills need work", or after harness/spec changes that could invalidate many skills at once. Skills fail audits only when someone runs them — this makes running them cheap.
 
 ## Evaluation checklist
 
@@ -172,5 +175,7 @@ After improving a skill, check:
 - Is every file under `references/`/`assets/`/`scripts/` referenced from SKILL.md?
 - Can the user test the skill with one realistic prompt?
 - Does the skill have an `evals/` folder with ≥3 valid evals (one positive, one negative-trigger, one edge-case)? See `assets/eval-template.json`.
+- Do body claims match the actual frontmatter, and are `allowed-tools` names current harness tools?
+- If routing was in question: did a live trigger test (workflow step 15) route the positive-eval query to this skill?
 
 **Exit criterion.** The skill is not improved unless: (1) `review-skill-structure.sh` reports zero MISSING, (2) every checklist item above is yes, (3) every file under `references/`, `assets/`, `scripts/` is referenced from `SKILL.md`. If any of the three fails, the verdict is at most "Needs minor cleanup" and the failures are listed in the output.

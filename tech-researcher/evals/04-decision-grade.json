@@ -1,0 +1,15 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "decision-grade-pivot",
+  "skill": "tech-researcher",
+  "query": "I'm thinking of moving a client portal off GitHub Pages to Cloudflare Pages — is that the right move, or should I stay?",
+  "files": [],
+  "expected_behavior": [
+    "Classifies as decision-grade (stack change, expensive to undo) — not a quick lookup",
+    "Checks the research index first, anchors the date, then verifies current Cloudflare Pages / GitHub Pages capabilities via research MCPs",
+    "Returns the Decision Brief format: weighted criteria table (fit, solo maintenance, lock-in/resale, switching cost, maturity, cost), reversibility call, cost-of-change vs cost-of-staying",
+    "Scores against standing constraints (resale-readiness, solo maintenance, existing Cloudflare usage in the stack)",
+    "Ends with 'what would change this call' and asks before any production-impacting migration is executed"
+  ],
+  "should_NOT_trigger": false
+}

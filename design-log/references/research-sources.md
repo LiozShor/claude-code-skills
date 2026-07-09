@@ -57,7 +57,7 @@ Static reference for the design-log skill's research phase. Loaded on demand, no
 | DevOps / Delivery | "Accelerate" — Forsgren, Humble & Kim; "The DevOps Handbook" — Kim et al |
 | Team / Platform | "Team Topologies" — Skelton & Pais |
 | Email | "Email Marketing Rules" — Chad S. White |
-| Automation / Workflow | Workflow-automation patterns; your workflow tool's official docs & community guides |
+| Automation / Workflow | Workflow-automation patterns; n8n official docs & community workflows |
 
 This is NOT exhaustive — use judgment to find the most relevant books for the specific task.
 

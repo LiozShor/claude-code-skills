@@ -17,23 +17,25 @@ Detect environment first:
 - If you are on `main`/`master`, do not implement there. Ask the user whether to create/use a feature branch or worktree, then stop until the branch/worktree is safe.
 - If another active feature branch appears unrelated to this task, do not switch branches without user approval.
 
-Log-number selection:
+Project-specific branch / log-number automation:
 
-- If your repository documents a design-log reservation script, worktree launcher, or branch-naming convention, follow that repo-specific workflow. (See `references/customization.md` for how to wire one in — useful when multiple parallel sessions could pick the same number.)
-- If no reservation automation exists, determine the next log number from `.agent/design-logs/INDEX.md` (and any archive index) plus existing filenames, then warn about possible collision in parallel sessions.
+- **If your repo uses a reservation script:** keep it **outside** the repo (e.g. `~/.claude/scripts/reserve-dl-<repo>.sh`) so it survives repo cleanups, and run it **from the repo root** — a well-written reserve script is repo-agnostic, operating on `git` in the cwd. A robust script handles: atomic `max()` across remote `refs/dl-claims/*` + `INDEX.md` (+ `ARCHIVE-INDEX.md` if present) + existing `NNN-*.md` filenames, retry-on-collision (e.g. up to 30 attempts), default-branch auto-detect (don't assume `main`), and — on Windows/MSYS — the `MSYS_NO_PATHCONV=1` fix. Do NOT search *inside* the repo and conclude "no reserve script exists," and do NOT improvise raw `git push` claims when a script is configured. After reserving `NNN`, follow your repo's branch convention — some rename the branch (`git branch -m DL-NNN-short-description`), others keep a fixed scheme (e.g. `slice/<short-name>`); reservation governs only the DL file number.
+- **Manual fallback (no script):** claim the next number with `git push origin HEAD:refs/dl-claims/NNN` where `NNN = max(remote refs/dl-claims/*, INDEX.md, existing filenames) + 1`, then create `.agent/design-logs/NNN-<desc>.md` and its `DL-NNN` INDEX row.
+- For other repos: if the repository documents a design-log reservation script, worktree launcher, or branch naming convention, follow that repo-specific workflow.
+- If no reservation automation exists, determine the next log number from `.agent/design-logs/INDEX.md`, `ARCHIVE-INDEX.md`, and existing filenames, then warn about possible collision in parallel sessions.
 
 ### A1 — Check Existing Logs (MANDATORY — do not skip)
 
-> **Cost discipline:** A1 + A2 are pure retrieval. Dispatch an `explore` or `model="haiku"` subagent to do the scan/grep/pre-scan and return a findings summary; reason over that summary on your main model rather than reading every log and file on it. See SKILL.md § Model Routing.
+> **Cost discipline:** A1 + A2 are pure retrieval. Dispatch an `explore` or `model="haiku"` subagent to do the scan/grep/pre-scan and return a findings summary; reason over that summary on the main (Opus) thread rather than reading every log and file on Opus. See SKILL.md § Model Routing.
 
-- Read `.agent/design-logs/INDEX.md` (and any archive index) first — these are the authoritative catalogs.
+- Read `.agent/design-logs/INDEX.md` and `ARCHIVE-INDEX.md` first — these are the authoritative catalogs.
 - Identify the relevant domain folder(s) under `.agent/design-logs/` (e.g. `ui/`, `api/`, `documents/`, `email/`, `infrastructure/`, `security/`, `research/`, or project-specific equivalents) and list their contents — a top-level scan alone will miss everything.
-- **Grep log bodies** for 2–3 keywords from the user's request across all domain folders — filename triage is not enough.
-- **Read in full** any log whose title, index entry, or grep hit looks related — do not rely on filenames alone.
+- **Relevance grep (mandatory, non-skippable):** derive 3–6 search terms from the task — symptom words, feature name, affected file/symbol, error string, **and any Hebrew UI label** — and grep them across `INDEX.md` + `ARCHIVE-INDEX.md` + **all DL bodies** across every domain folder. Filename/title triage is not enough. **Recency ("the last N logs") is not a substitute for this — the most recent logs are rarely the relevant ones.**
+- **Read in full** any log whose title, index entry, or grep hit looks related — do not rely on filenames alone. Cite related logs in the new DL's "Related Logs".
 - If a related log exists: extend it, or explicitly justify creating a new one.
-- **Surface findings to the user before asking discovery questions** (e.g., "DL-12 already decided X — does this still apply?") — prior decisions may change the requirements or make new questions unnecessary.
+- **Surface findings to the user before asking discovery questions** (e.g., "DL-161 already decided X — does this still apply?") — prior decisions may change the requirements or make new questions unnecessary.
 - Check for any `[APPROVED]` or `[BEING IMPLEMENTED]` logs not yet `[COMPLETED]` (unfinished work that may conflict).
-- **Check for prior research** on the same domain — if found, reference it and add only incremental findings.
+- **Check for prior research** on the same domain — read `.agent/design-logs/research-index.md` first (one small file instead of grepping log bodies for research sections). If the domain has a row there, reference the prior DL and plan for delta research only (see Phase B, B0.5).
 
 ### A2 — Light Codebase Pre-Scan (Reuse First)
 
@@ -86,24 +88,34 @@ Not exhaustive — use judgment for the specific task.
 
 ### B0.5 — Check the Research Index (cache hit = delta research only)
 
-Before any search, read `.agent/design-logs/research-index.md` (if you maintain one):
+Before any search, read `.agent/design-logs/research-index.md`:
 
-- **Entry < 90 days old for this domain** → do **delta research only**: 1 targeted search asking "what changed since [date] / what didn't the prior log cover for this specific task?", and cite the prior log in Section 3 (`**Prior research:** DL-NNN ([domain], YYYY-MM-DD) — delta only`).
-- **Entry > 90 days old** → re-validate the key claims (a quick search confirming the principles still hold) before reusing them, then proceed with whatever delta research the task needs.
+- **Entry < 90 days old for this domain** → do **delta research only**: 1 targeted search asking "what changed since [date] / what didn't the prior log cover for this specific task?", and cite the prior DL in Section 3 (`**Prior research:** DL-NNN ([domain], YYYY-MM-DD) — delta only`).
+- **Entry > 90 days old** → re-validate the key claims (quick search confirming the principles still hold) before reusing them, then proceed with whatever delta research the task needs.
 - **No entry / file missing** → full B2 below.
 
 ### B2 — Research Sources (3+ minimum)
 
-> **Cost discipline:** Reading 3+ full sources is token-heavy. Run the searches/extraction in a `model="sonnet"` research subagent and fold back only its **distilled** findings (principles, patterns, anti-patterns) — avoid loading multiple full pages into your main context. See SKILL.md § Model Routing.
+> **Cost discipline:** Reading 3+ full sources is token-heavy. Run the searches/extraction in a `model="sonnet"` research subagent (or `tech-researcher`) and fold back only its **distilled** findings — 3–5 sources, **≤700 words** of principles/patterns/anti-patterns, never full page text. Avoid loading multiple full pages into the main (Opus) context. See SKILL.md § Model Routing.
 
-Find and read substantive content from **at least 3 sources** across these tiers.
+Use a **research MCP** to find and read substantive content from **at least 3 sources** across these tiers. Do NOT use built-in `WebSearch`/`WebFetch` — they are intentionally not in `allowed-tools`. Pick the tool by job (use whichever is installed; prefixes follow your MCP server names):
 
-**Which tool to use** (use whichever you have installed; all are in `allowed-tools`; tool-name prefixes follow your own MCP server names):
-- **context7 MCP** — best for library/framework/SDK/API docs. `mcp__context7__resolve-library-id` (resolve a library name to its ID) → `mcp__context7__query-docs` (fetch current docs). Prefer this when the domain is a specific library/tool's API or config.
-- **Exa MCP** — semantic/neural discovery; best for finding the highest-quality writing on a topic rather than keyword matches. `mcp__exa__web_search_exa` (neural search), `mcp__exa__crawling_exa` (fetch a known URL), `mcp__exa__deep_researcher_start` / `mcp__exa__deep_researcher_check` (start an agentic deep-research task and poll for the report).
-- **Tavily MCP** — best for general multi-source web research. `mcp__tavily__tavily_search` (ranked results with snippets; one query per call, issue parallel calls for independent searches) and `mcp__tavily__tavily_extract` (fetch full URL content as Markdown; accepts a `urls` array for batch).
-- **Firecrawl MCP** — full-page extraction, JS-heavy sites, crawling a whole docs site. `mcp__firecrawl__firecrawl_search` (search + scrape), `mcp__firecrawl__firecrawl_scrape` (clean markdown from one page), `mcp__firecrawl__firecrawl_crawl` (crawl linked pages), `mcp__firecrawl__firecrawl_extract` (structured extraction).
-- **Built-in `WebSearch` + `WebFetch`** — always available, zero setup. `WebSearch` to find sources, `WebFetch` to read a page. The universal fallback when no MCP is installed.
+**Tavily** — general ranked web search + extraction:
+- `mcp__claude_ai_Tavily__tavily_search` — web search returning ranked results with content snippets. One query per call; issue parallel calls in a single message for multiple independent searches.
+- `mcp__claude_ai_Tavily__tavily_extract` — fetch full content of one or many URLs as Markdown (accepts a `urls` array — native batch).
+- `mcp__claude_ai_Tavily__tavily_crawl` — crawl a site starting from a root URL when traversing linked pages.
+- `mcp__claude_ai_Tavily__tavily_map` — get a sitemap-style structural map of a site without fetching content.
+
+**Exa** — semantic/neural source discovery; best for "find the best writing on X" rather than keyword match:
+- `mcp__exa__web_search_exa` — neural web search tuned for high-quality, semantically-relevant sources.
+- `mcp__exa__web_fetch_exa` — fetch full page content for a known URL.
+- `mcp__exa__web_search_advanced_exa` — advanced search with full control over filters, domains, dates, and content options.
+
+**Firecrawl** — full-page extraction, JS-heavy sites, and crawling a whole docs site:
+- `mcp__firecrawl__firecrawl_search` — search + scrape in one.
+- `mcp__firecrawl__firecrawl_scrape` — clean markdown from a single page (handles JS rendering).
+- `mcp__firecrawl__firecrawl_crawl` — crawl linked pages from a root.
+- `mcp__firecrawl__firecrawl_extract` — structured extraction from one or many pages.
 
 **Tier 1 — Books:** Find the 1–2 most respected books in the identified domain. Search for core concepts, chapter summaries, key takeaways.
 **Tier 2 — Authoritative articles & documentation.**
@@ -113,9 +125,9 @@ For book recommendations and source tiers by domain, see `references/research-so
 
 **Efficiency rule:** Time-box research to 5–10 minutes of tool calls. Read the most relevant sections, not entire books. Use `Task` with parallel agents for independent searches when useful.
 
-**Optional delegation:** For fast-moving technical domains (AI/ML tooling, agent frameworks, LLM SDKs, JS/TS frameworks, cloud, DevOps, package status checks), you MAY delegate research to a general-purpose research subagent (via `Task`) or a dedicated research skill if your setup has one, then fold its output into Section 3 of the design log. For UX, architecture, and domain-pattern research where the book/principles framing matters more than current docs, the inline web flow above is usually better. Do not over-delegate when a direct search is sufficient.
+**Optional delegation:** For fast-moving technical domains (AI/ML tooling, agent frameworks, LLM SDKs, JS/TS frameworks, cloud, DevOps, package status checks), you MAY invoke the `tech-researcher` skill via the `Skill` tool to get a formal Recommendation / Current Evidence / Risks / Implementation Notes report, then fold its output into Section 3 of the design log. Use this for technical-tool research; keep the inline Tavily flow for UX, architecture, and domain-pattern research where the book/principles framing matters more than current docs. Do not use `Task` or `Skill` for routine research when a direct Tavily search is sufficient.
 
-> **HARD GATE:** If you delegated research to a subagent/skill, you MUST wait for its result before calling `EnterPlanMode`. Do NOT enter Phase C while research is still running.
+> **HARD GATE:** If you invoked `tech-researcher`, you MUST wait for its result before calling `EnterPlanMode`. Do NOT enter Phase C while tech-researcher is still running.
 
 ### B3 — Extract & Document Findings
 
@@ -126,9 +138,9 @@ Synthesize research into actionable findings (documented in Section 3 of the des
 - **Anti-patterns** to avoid (and why they're tempting but wrong for us).
 - **Deviations** — if a source recommends something that doesn't fit our constraints, note the recommendation AND why we're deviating.
 
-**Update the research index:** after research, upsert the domain row in `.agent/design-logs/research-index.md` — domain, log number(s), today's date, a 1-line principles summary, top 1–3 sources. If the file doesn't exist, create it from `assets/research-index-template.md`. (Optional but recommended — it's what makes B0.5 cache hits possible on later logs.)
+**Update the research index:** after research, upsert the domain row in `.agent/design-logs/research-index.md` — domain, DL number(s), today's date, a 1-line principles summary, top 1–3 sources. If the file doesn't exist, create it from `assets/research-index-template.md`.
 
-**Cross-project principles (optional):** if a principle is genuinely project-agnostic (a domain truth, not tied to this codebase/stack) and your setup keeps a cross-project memory/notes store, save it there too so other projects benefit. Only reusable principles — don't store project-specific findings.
+**Cross-project principles:** if a principle is project-agnostic (a domain truth, not tied to this codebase/stack), also save it to auto-memory (`~/.claude/projects/<your-project>/memory/`) as a `reference`-type memory plus a MEMORY.md index line, so other projects benefit. Only genuinely reusable principles — don't memorize project-specific findings.
 
 ### Research Rules
 
@@ -136,7 +148,7 @@ Synthesize research into actionable findings (documented in Section 3 of the des
 2. **Quality over quantity.** Reading 3 excellent sources deeply beats skimming 10.
 3. **Be specific to our context.** Don't quote generic advice — explain how each principle applies to this feature/bug.
 4. **Time-box it.** 5–10 minutes of tool calls.
-5. **Cumulative knowledge.** If you've already researched a domain in a previous design log, reference it (`See design-log NNN for prior research on [domain]`) and add only new/incremental findings. Research is still mandatory for explicit `/design-log` runs; in already-researched domains, satisfy it with targeted delta research that checks what has changed or what the prior log did not cover.
+5. **Cumulative knowledge.** If you've already researched a domain in a previous design log, reference it (`See design-log NNN for prior research on [domain]`) and add only new/incremental findings. Tavily research is still mandatory for explicit `/design-log` runs; in already-researched domains, satisfy it with targeted delta research that checks what has changed or what the prior log did not cover.
 6. **Disagree with books when warranted.** Note the recommendation AND why we're deviating.
 
 ---
@@ -153,7 +165,7 @@ After research is complete:
    - Dependencies and potential risks.
    - **How research findings map to our actual codebase** (do existing patterns align with best practices? where do they diverge?).
 3. **Create the Design Log File:**
-   - Determine next log number — if the branch was already renamed `DL-NNN-*` in A0, use that NNN. If the repository documents a reservation script, run it from the documented repo root. Otherwise scan `.agent/design-logs/INDEX.md` (and any archive index) plus existing filenames, then warn about possible collision in parallel sessions.
+   - Determine next log number — if the branch was already renamed `DL-NNN-*` in A0, use that NNN. If the repository documents a reservation script, run it from the documented repo root. Otherwise scan `.agent/design-logs/INDEX.md`, `ARCHIVE-INDEX.md`, and existing filenames, then warn about possible collision in parallel sessions.
    - Path: `.agent/design-logs/NNN-kebab-case-description.md`.
    - Fill in the canonical template (`assets/design-log-template.md`) using findings from **both research and exploration**.
    - Set status to `[DRAFT]`.
@@ -166,27 +178,27 @@ After research is complete:
 
 ## Phase D: Implementation (After Approval Only)
 
-**Optional:** If your setup has a subagent-driven implementation skill, you may use it when the plan has independent tasks that can run in parallel. Otherwise implement directly.
+**Recommended:** Use `/subagent-driven-development` for implementation when the plan has independent tasks that can run in parallel.
 
 1. **Update design log status to `[BEING IMPLEMENTED — DL-NNN]`** (replace NNN with the actual log number).
 2. **Build strictly according to "Proposed Solution".**
 3. **Reference research in code comments where relevant** (e.g., `// Pattern: Circuit Breaker — see design-log NNN`).
-4. **Run any validation steps that can be verified immediately** (build passes, deploys, no errors in logs).
+4. **Run any validation steps that can be verified immediately** (build passes, workflow deploys, no errors in logs).
 5. **Update "Implementation Notes" section if any deviations occur.**
 6. **Update design log status to `[IMPLEMENTED — NEED TESTING]`.**
 7. **Housekeeping (always the last task in every implementation plan):**
    - Update design log status → `[IMPLEMENTED — NEED TESTING]`.
-   - Update the design log INDEX.
+   - Update design log INDEX.
    - Update `.agent/current-status.md`: summarize what was done this session, add next-session TODOs (including unchecked Section 7 items), remove completed items from existing TODOs.
-   - If the implementation added/removed/changed workflows, API endpoints, client pages, or other architecture surfaces — update the relevant architecture diagram(s) in your repo docs.
-   - Git commit & push the feature branch using your project's standard git workflow and commit conventions. All file edits MUST be done before this point if your repo has a branch-guard hook that blocks edits on main.
-   - **Deploys:** If the change touches a deployment surface, follow the project deployment workflow for live testing. Ask before destructive operations, secret changes, production-impacting changes, or any deployment command the repo does not clearly document.
+   - If the implementation added/removed/changed workflows, API endpoints, client pages, email types, or document processing logic — update the relevant `docs/architecture/*.mmd` diagram(s).
+   - Git commit & push the feature branch — **invoke the `git-ship` skill** (mandatory entry point for all git write ops). Do not run `git commit` / `git push` / `git merge` directly. All file edits MUST be done before this point — branch-guard blocks edits on main.
+   - **Backend deploys:** If the change touches backend/runtime deployment surfaces, follow the project deployment workflow for live testing. The skill has `Bash` permission and may run documented non-destructive deployment commands when the project workflow permits; ask before destructive operations, secret changes, production-impacting changes, or any deployment command the repo does not clearly document.
    - **NO auto-merge to main.** Never merge to main without explicit approval, even for "testing" convenience. Commit locally, push the feature branch when requested by the workflow, then **pause for explicit approval** before merging or pushing to main.
    - **Frontend/static hosting changes** may only go live after the project-specific release path runs (such as merge-to-main or a hosting deploy). Surface this as a blocker the user needs to decide about, not something to bypass.
-   - **DO NOT delete the branch.** Follow-up improvements are common after live testing. Feature branches persist; merge or delete the branch when truly done.
+   - **DO NOT delete the branch during Phase D.** Follow-up improvements are common after live testing, so the branch persists through implementation. Branch deletion happens later, only once the log is `[COMPLETED]` — see **Phase E, step 5 (Branch cleanup)**.
    - Tell the user (template):
      > "Feature branch `{branch}` pushed. Backend deployed if applicable. Frontend/static hosting changes may not be live until the project release path runs. Approve merge/release when ready."
-   - **Do NOT edit any files after merging to main** if your repo's branch-guard hook blocks it. If follow-up is needed, check out the feature branch again first.
+   - **Do NOT edit any files after merging to main** — the branch-guard hook will block it. If follow-up is needed, check out the feature branch again first.
 
 ---
 
@@ -204,10 +216,19 @@ After implementation, persist outstanding test items so nothing gets lost betwee
       Design log: `.agent/design-logs/NNN-feature-name.md`
    ```
    * Place it right after the implementation TODO it relates to (same priority number).
-   * If the design log is now `[IMPLEMENTED — NEED TESTING]` or `[COMPLETED]`, the test entry is what keeps it on the radar.
+   * If the design log is now `[IMPLEMENTED — TESTING]` or `[COMPLETED]`, the test entry is what keeps it on the radar.
 3. **Mark the log:**
-   - If all Section 7 tests passed in-session → set status to `[COMPLETED]` in BOTH the DL file and `INDEX.md`. (If your repo has a close script — see `references/customization.md` — run it instead so any PII/lint guards run consistently.)
-   - If tests are still outstanding → leave as `[IMPLEMENTED — NEED TESTING]`.
+   - If all Section 7 tests passed in-session → run `bash .claude/workflows/close-design-log.sh <NNN>` — it patches status to `[COMPLETED]` in both the DL file and INDEX.md, runs the PII guard, and stages the files.
+   - If tests are still outstanding → leave as `[IMPLEMENTED — NEED TESTING]` (no script needed yet).
+4. **Append the cost line:** add a one-line cost estimate to the DL's Section 8 footer:
+   `**Cost:** ~N subagent dispatches (X haiku / Y sonnet / Z opus), ~M research searches, [short/medium/long] session`
+   Counts, not tokens (token usage isn't measurable in-session) — after ~10 logs this shows where the budget goes.
+5. **Branch cleanup (only once truly done):** After the log is `[COMPLETED]`, merged to main, and — if it deployed — live-verified, delete the feature branch so stale branches don't accumulate. Do this through the `git-ship` skill (mandatory git entry point), and only after confirming the branch is fully merged:
+   - **Verify merged:** `git merge-base --is-ancestor <branch> origin/main` must succeed. (A branch rebased before an FF-push to main can read as "not merged" by SHA even though its *content* is on main — confirm the content landed before deleting.)
+   - **In a worktree checked out on that branch,** you cannot delete the branch you're on: `git checkout --detach` first, then delete.
+   - **Delete local + remote:** `git branch -D <branch>` and `git push origin --delete <branch>`. (Force-push to the branch may be blocked by a guard hook; `--delete` is the supported path.)
+   - **Skip / defer** if follow-up work on the same branch is still likely, or if the project's worktree-cleanup automation needs the merged branch to detect cleanup eligibility — check the repo's cleanup rules before deleting.
+   - **Do NOT remove the worktree directory** as part of this step if you are currently running inside it — that terminates your own session's working directory. Leave worktree teardown to the project's cleanup script or a later session.
 
 **Rule:** A design log is NOT `[COMPLETED]` until all Section 7 items are checked off.
 
@@ -259,11 +280,11 @@ Triggered by `/design-log lite` (or a request for a "light/quick design log"). S
 | A1 Existing logs | INDEX + archive + grep bodies + read related logs in full | INDEX + research-index check; read related logs only on a direct hit |
 | A2 Pre-scan | Bounded reuse scan | Same, but cap at the most obvious reuse candidates |
 | A3 Questions | Usually 5+ | **2–3 decision-shaping questions** (still via `AskUserQuestion`, still wait for answers) |
-| B Research | 3+ sources, 5–10 min | **1 source minimum**; a fresh research-index hit (<90 days) satisfies Phase B with **zero new searches** (cite the prior log) |
+| B Research | 3+ sources, 5–10 min | **1 source minimum**; a fresh research-index hit (<90 days) satisfies Phase B with **zero new searches** (cite the prior DL) |
 | C Plan mode | `EnterPlanMode` first → DL file `[DRAFT]` → `ExitPlanMode` | **Unchanged — all three gates apply** |
 | Template | All sections fully filled | Sections 3–5 may be compressed to a few bullets each; Sections 1, 2, 6, 7 stay concrete |
 | D Implementation | Per approved plan + housekeeping | Unchanged |
-| E Test handoff | Mandatory | **Mandatory — unchanged** |
+| E Test handoff | Mandatory | **Mandatory — unchanged** (including the cost line) |
 
 **Never skipped in lite mode:** A0 branch setup, the `[DRAFT]` status, the `EnterPlanMode`/`ExitPlanMode` approval gate, saving the DL file, Phase E handoff. Lite mode is a smaller log, not a different protocol.
 
@@ -276,7 +297,7 @@ Triggered by `/design-log lite` (or a request for a "light/quick design log"). S
 - Do not use filename-only triage for prior logs; grep bodies and read related logs in full.
 - Do not repeat old research verbatim; check the research index (B0.5), do targeted delta research, and cite the prior log.
 - Do not mark `[COMPLETED]` until every Section 7 validation item is checked off.
-- Do not patch INDEX.md or the DL file by hand when closing if your project has a close-design-log script (see `references/customization.md`) — run it so any PII/lint guards run and both files stay consistent.
+- Do not patch INDEX.md or the DL file by hand when closing — run `bash .claude/workflows/close-design-log.sh <NNN>` so the PII guard runs and the status is updated consistently in both files.
 
 ---
 
@@ -285,11 +306,11 @@ Triggered by `/design-log lite` (or a request for a "light/quick design log"). S
 Self-check after the skill runs. If any answer is "no" you skipped a phase:
 
 - [ ] **Phase A:** Asked decision-shaping clarifying questions via `AskUserQuestion` (not plain text), usually 5+ (2–3 in lite mode) unless prior context answered enough, and waited for answers?
-- [ ] **Phase A (HARD):** Ran the A1 relevance grep — task-derived search terms (incl. any non-English UI labels) across `INDEX.md` + any archive index + **all DL bodies**; read any related prior DL in full and cited it in the new DL's Related Logs; surfaced findings to the user before A3 questions. **A recency summary ("last N logs") alone = FAIL.**
+- [ ] **Phase A (HARD):** Ran the A1 relevance grep — task-derived search terms (incl. Hebrew UI labels) across `INDEX.md` + `ARCHIVE-INDEX.md` + **all DL bodies**; read any related prior DL in full and cited it in the new DL's Related Logs; surfaced findings to the user before A3 questions. **A recency summary ("last N logs") alone = FAIL.**
 - [ ] **Phase A:** Codebase pre-scan done — existing solutions/reuse opportunities surfaced?
-- [ ] **Phase B:** 3+ research sources cited, OR a fresh research-index hit with delta research; time-boxed to 5–10 min? Research index updated afterward?
+- [ ] **Phase B:** 3+ research sources cited via a research MCP (NOT `WebSearch`/`WebFetch`), OR a fresh research-index hit with delta research; time-boxed to 5–10 min? Research index updated afterward?
 - [ ] **Phase C:** First tool call was `EnterPlanMode` — no Glob/Grep/Read/Write happened before plan mode was active?
 - [ ] **Phase C:** Design log file written using the template at `assets/design-log-template.md`, status `[DRAFT]`, no template placeholders left?
 - [ ] **Phase C:** Exited via `ExitPlanMode` (the single approval gate) — not a plain-text "approve?" prompt?
-- [ ] **Phase D:** Status moved through `[BEING IMPLEMENTED]` → `[IMPLEMENTED — NEED TESTING]`; INDEX and status file updated; committed via your standard git workflow (e.g. the `git-ship` skill), not ad-hoc?
-- [ ] **Phase E:** All unchecked Section 7 items copied to the status file's "Active TODOs"; cost/notes line appended to Section 8; log marked `[COMPLETED]` only after all tests pass?
+- [ ] **Phase D:** Status moved through `[BEING IMPLEMENTED]` → `[IMPLEMENTED — NEED TESTING]`; INDEX.md and `current-status.md` updated; `git-ship` skill invoked (not raw git)?
+- [ ] **Phase E:** All unchecked Section 7 items copied to `current-status.md` "Active TODOs"; cost line appended to Section 8; log marked `[COMPLETED]` only after all tests pass (via `bash .claude/workflows/close-design-log.sh <NNN>`)?

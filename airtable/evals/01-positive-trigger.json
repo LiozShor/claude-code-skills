@@ -1,0 +1,15 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "filter-records-by-client",
+  "skill": "airtable",
+  "query": "Find all pending documents for client CPA-210 in Airtable.",
+  "files": [],
+  "expected_behavior": [
+    "Satisfies the schema gate (Quick Reference, docs/airtable-schema.md, or a no-filter probe) before building filterByFormula",
+    "Uses curl with --data-urlencode for the filtered read, not Python urllib",
+    "Wraps lookup/linked fields in SEARCH/FIND/ARRAYJOIN instead of bare '='",
+    "Formats the result as a clean table/summary, not a raw JSON dump"
+  ],
+  "should_NOT_trigger": false,
+  "_notes": "Positive trigger: direct Airtable record query with base/table/field ID vocabulary."
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "compare-langchain-langgraph-smolagents",
+  "skill": "tech-researcher",
+  "query": "Should I use LangChain, LangGraph, or smolagents for my agent's tool-calling loop?",
+  "files": [],
+  "expected_behavior": [
+    "Anchors on the current date before searching (via Bash date or injected session context)",
+    "Uses a research MCP (Tavily/Exa/Firecrawl) rather than WebSearch/WebFetch",
+    "Fetches current official docs/repos for all three options, ideally in parallel calls",
+    "Produces the Tool Comparison output format with Best choice / Use this when / Avoid this when / Comparison / Final recommendation",
+    "Checks maintenance status and version currency before recommending"
+  ],
+  "should_NOT_trigger": false,
+  "_notes": "Positive trigger: canonical X vs Y tool-comparison question this skill exists for (Example 3 in the skill file)."
+}

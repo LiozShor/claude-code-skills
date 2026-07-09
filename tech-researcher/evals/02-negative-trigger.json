@@ -1,0 +1,14 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "already-in-design-log-phase-b",
+  "skill": "tech-researcher",
+  "query": "We're mid-way through the /design-log Phase B research step for this feature — can you check what the current best practice is for rate-limiting a Next.js API route before we finalize the plan?",
+  "files": [],
+  "expected_behavior": [
+    "Recognizes the user is already inside a /design-log Phase B run",
+    "Does not invoke tech-researcher separately since design-log Phase B already handles this research",
+    "Continues the research within the existing design-log flow instead of duplicating it as a standalone tech-researcher pass"
+  ],
+  "should_NOT_trigger": true,
+  "_notes": "Negative trigger: explicitly listed non-trigger in the skill file — duplicates /design-log Phase B's own research handling."
+}

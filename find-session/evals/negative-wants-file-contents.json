@@ -1,0 +1,5 @@
+{
+  "query": "What did we write in AGENT-THREAD.md? Show me the contents.",
+  "expected_behavior": "Skill does NOT drive a session hunt. The user wants an artifact's contents, not to resume a conversation, so the correct action is to Read the file directly. If the file path is unknown, a brief locate is fine, but resume instructions are not the goal.",
+  "expected_trigger": false
+}

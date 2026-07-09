@@ -1,20 +1,44 @@
 ---
 name: tally
-description: Edit Tally forms via MCP tools. Use when user mentions Tally, questionnaires, form building, form blocks, or Tally form IDs. Provides workflow patterns and gotchas for the Tally MCP.
+description: Edit Tally forms via MCP tools — add/remove/reorder blocks and questions, change text, configure visibility/required state, and build conditional logic (apply_logic DSL). Use when the user mentions Tally, questionnaires, form building, form blocks, or a Tally form ID/URL, or asks to add a question, hide/show a field, sync Hebrew/English forms, or add logic to a Tally form. Does NOT trigger for writing the actual wording/persuasive copy of form questions or intro text (route that to `microcopy` or `copywriting`) — this skill is for structural/tool-mechanics edits via the Tally MCP, not for drafting prose.
+allowed-tools: mcp__claude_ai_Tally__load_form, mcp__claude_ai_Tally__save_form, mcp__claude_ai_Tally__create_blocks, mcp__claude_ai_Tally__remove_blocks, mcp__claude_ai_Tally__remove_questions, mcp__claude_ai_Tally__remove_pages, mcp__claude_ai_Tally__update_text, mcp__claude_ai_Tally__configure_blocks, mcp__claude_ai_Tally__apply_logic, mcp__claude_ai_Tally__reposition_questions, mcp__claude_ai_Tally__reposition_pages, mcp__claude_ai_Tally__list_blocks, mcp__claude_ai_Tally__list_workspaces
 ---
 
 # Tally Form Editor
 
 You are a Tally form editor that helps users build and modify Tally forms using the Tally MCP tools. The tool prefix depends on how the server is registered: it may be `mcp__tally__*` OR `mcp__claude_ai_Tally__*` (the claude.ai-connected server). The `claude_ai_Tally` server is the more capable one and **CAN create conditional logic** via `apply_logic` (see §5). Check which prefix is available before assuming a tool is missing.
 
-## Working with your forms
+## When this triggers
+- User mentions Tally, a Tally form ID/URL, questionnaires, or form blocks.
+- Requests to add/remove/reorder a question or page, change form text, hide/show a field, make a field optional/required, or add conditional logic to a Tally form.
+- Syncing a Hebrew Tally form with its English mirror (structure + logic, not just text).
 
-Get a form's ID from its share URL — `https://tally.so/r/<formId>` (or `https://tally.so/forms/<formId>/...`).
-The user supplies the form ID(s) for the forms they want to edit.
+## When this does not trigger
+- Drafting the actual wording/persuasive copy of form questions, intro text, or privacy notices — that's `microcopy` (short strings) or `copywriting` (longer prose); use this skill only for the structural/tool-mechanics edit once wording is decided.
+- Building a brand-new HTML mock of a form UI with no live Tally form involved — use `visualize`.
 
-**Multi-language mirrors:** if you maintain the same form in several languages, pick one language as the
-source of truth and keep the others in sync. When syncing, diff the two forms and replicate **structure +
-conditional logic**, not just the translated text.
+## Inputs required
+- **Form ID or URL** — extractable from a shared form URL like `https://tally.so/r/abc123` or `https://tally.so/forms/abc123/[...]`. Ask the user if not given and not one of the known project forms below.
+- **Which server prefix is available** (`mcp__tally__*` vs `mcp__claude_ai_Tally__*`) — check before assuming a tool is missing (`apply_logic` is only on `claude_ai_Tally`).
+
+## Decision gates
+- **Prefix ambiguous?** → check which of `mcp__tally__*` / `mcp__claude_ai_Tally__*` is available before assuming a tool (especially `apply_logic`) is missing.
+- **Need conditional logic ("show field only when X")?** → two-step gate: (1) default-hide the target field via `configure_blocks` visibility, THEN (2) `apply_logic` the SHOW rule — the rule alone does not hide it by default.
+- **Editing a form used in an EN/HE pair?** → diff both, replicate structure + logic via `apply_logic`, not just translated text.
+- **`save_form` never called?** → all edits are lost; always end the sequence with save_form.
+
+## Output format
+- Every edit ends with a `save_form` call (status `PUBLISHED` or `DRAFT`) that persists the change and returns the shareable form URL — report that URL back to the user.
+- Read-only requests (e.g. listing blocks) need no save_form call.
+
+## Project Context
+
+This project uses Tally questionnaires in Hebrew (primary) and English:
+- **AR (Annual Reports):** Form ID `1AkYKb` (Hebrew) — full tax questionnaire
+- **CS (Capital Statements):** Form ID `7Roovz` (Hebrew) — capital statement questionnaire
+- **CS English:** Form ID `EkDkp4` — English mirror of `7Roovz`
+
+Hebrew is the source of truth; English mirrors are kept in sync (same questions/options/logic, translated wording). When syncing, diff the two and replicate structure + conditional logic, not just text. Form IDs for any other English versions or new forms will be provided by the user.
 
 ## Required Workflow (CRITICAL)
 
@@ -41,7 +65,7 @@ mcp__tally__save_form(formId: "FORM_ID", status: "PUBLISHED")
 ```
 **Changes are NOT persisted until you save.** If you skip this step, all edits are lost.
 
-## Key Gotchas (Learned from Experience)
+## Gotchas — Key Gotchas (Learned from Experience)
 
 ### 1. Response Format Errors (Transient)
 The Tally MCP sometimes returns `MCP error -32602: Invalid tools/call result` on `content[1]`. This is a **transient** issue — retry the same call and it usually works. The `load_form` and `save_form` tools are most reliable; `create_blocks` and `list_blocks` may need a retry.
@@ -84,16 +108,15 @@ The `claude_ai_Tally` server exposes **`apply_logic`**, which creates/updates lo
 
 **questionUuid grouping:** A TITLE, an interspersed helper `TEXT` block, and the input all share ONE `questionUuid` even though their internal block `groupUuid`s differ. So a single `SHOW <questionUuid>` reveals the title + helper + input together — you do NOT need separate SHOW actions per block.
 
-**Reference:** a full set of conditional logic rules + default-hidden blocks can be mirrored across two
-forms purely via `apply_logic` + `configure_blocks`. Pattern: `WHEN <q> IS <Yes-option> THEN SHOW <followup>, REQUIRE <followup>`.
+**Reference (DL: CS-English sync 2026-05-31):** mirrored all 24 Hebrew→English logic rules + 62 default-hidden blocks into `EkDkp4` purely via `apply_logic` + `configure_blocks`. Pattern: `WHEN <q> IS <Yes-option> THEN SHOW <followup>, REQUIRE <followup>`.
 
 ### 6. Form Title Blocks — Editable via API (OLD "UI-only" note was WRONG)
-`FORM_TITLE` blocks **can** be edited via `update_text` like any TITLE/TEXT/HEADING block, **including inserting mentions** — verified June 2026 against current Tally docs (developers.tally.so/documentation/creating-a-mention uses FORM_TITLE as the mention example) and live on real forms. The old `safeHTMLSchema` validation-failure warning is stale. Only fall back to the Tally UI if a *specific* `save_form` actually rejects the title edit.
+`FORM_TITLE` blocks **can** be edited via `update_text` like any TITLE/TEXT/HEADING block, **including inserting mentions** — verified June 2026 against current Tally docs (developers.tally.so/documentation/creating-a-mention uses FORM_TITLE as the mention example) and live on `7Roovz`/`EkDkp4` (DL-493). The old `safeHTMLSchema` validation-failure warning is stale. Only fall back to the Tally UI if a *specific* `save_form` actually rejects the title edit.
 
 ### 6b. Mentions / Recall — render a hidden field (or answer) inside text
 `update_text` supports **mentions** in `TITLE`, `TEXT`, `HEADING`, and `FORM_TITLE` blocks (NOT in input placeholders or option text — those strip to plain text). Use them to display a value dynamically:
 - **Syntax:** put `{{Field Title}}` or `{{questionUuid}}` in the `html`. The MCP **auto-corrects a field name to its UUID** and reports it, e.g. `Auto-corrected: "year" → {{aef51653-…}}`. Referencing a **hidden field by name** works (`{{year}}`), but the stored form is UUID-based.
-- **Hidden-field use case:** a hidden field populated from a URL query param (`?year=2024`) renders **on first page load**, before any input — so it shows in the form title and the very first question. This lets a form become year-dynamic for any year without per-year duplication.
+- **Hidden-field use case (DL-493):** a hidden field populated from a URL query param (`?year=2024`) renders **on first page load**, before any input — so it shows in the form title and the very first question. This is how the CS forms became year-dynamic for any year without per-year duplication.
 - **Reconstruct full block HTML:** `update_text` replaces the *entire* block. For multi-run TEXT blocks, rebuild the full HTML (`<b>`, `<u>`, `<br>`) and put the mention token where the dynamic value goes (e.g. `31.12.{{year}}`).
 - **No `defaultValue` via MCP:** the `{{}}` shorthand can't set a fallback for a missing param → the mention renders blank if the param is absent. Ensure the URL always supplies it, or set the default once in the Tally UI.
 - **Verify after save:** reload (or read the returned ledger) and confirm the block shows a `mentions=…` entry / `{{uuid}}` placeholder, NOT a literal `{{year}}` string.
@@ -141,18 +164,23 @@ When passing multiple groups with the same `insertAfterBlockUuid` to `create_blo
 | "Show field Y only when X = Yes" | load_form > configure_blocks (visibility isHidden:true on Y's blocks) > apply_logic (`WHEN <Xq> IS <YesOpt> THEN SHOW <Yq>, REQUIRE <Yq>`) > save_form |
 | "Sync English form to Hebrew" | load both (read-only diff) > replicate structure, options, **and conditional logic** via apply_logic > save_form. Translate wording; don't just copy text. |
 
-## Localization / RTL Guidelines
+## Hebrew Form Guidelines
 
-- Use `<br>` for line breaks inside block HTML, not `\n`.
-- Bold (or bold+underline) the key terms a respondent must not miss — option qualifiers, definitions,
-  required-vs-optional markers — and keep that styling consistent across the whole form.
-- Include any privacy/consent notice in a `TEXT` block right after the intro paragraph.
-- Phone fields: set `defaultCountryCode` to the form's primary country (e.g. `"US"`, `"IL"`, `"GB"`).
-- For RTL languages (Hebrew, Arabic, …), author the form in that language as the source of truth and
-  mirror other languages from it (see the "Sync … form" row above) — replicate structure + logic, not
-  just translated text.
+- All client-facing forms are **Hebrew-first** (RTL)
+- Use `<br>` for line breaks, not `\n`
+- Bold key terms matching the AR form pattern: family unit definitions, "לא/לא רלוונטי", "כל" (bold+underline)
+- Privacy notice: always include after intro paragraph (see AR form for template)
+- Phone fields: set `defaultCountryCode: "IL"`
 
 ## Reference
 
 - [Tally MCP Tools](https://api.tally.so/mcp) — the MCP endpoint
 - [api-reference.md](api-reference.md) — detailed tool patterns and examples
+
+## Evaluation checklist
+- [ ] Correct server prefix confirmed (`mcp__tally__*` vs `mcp__claude_ai_Tally__*`) before assuming a tool is unavailable.
+- [ ] Sequence followed: `load_form` → edits → `save_form` (no edits left unsaved).
+- [ ] For "show only when X" logic: target field default-hidden via `configure_blocks` BEFORE `apply_logic` adds the SHOW rule.
+- [ ] `apply_logic` actions chained with commas, not `AND`.
+- [ ] EN/HE sync replicates structure + conditional logic, not just translated text.
+- [ ] Form URL from `save_form` reported back to the user.

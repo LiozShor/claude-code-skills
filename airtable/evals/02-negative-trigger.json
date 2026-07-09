@@ -1,0 +1,14 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "n8n-airtable-node-not-direct-api",
+  "skill": "airtable",
+  "query": "In my n8n workflow, update the Airtable node so it writes to the reports table after the webhook fires.",
+  "files": [],
+  "expected_behavior": [
+    "Does NOT use this skill's curl/pyairtable direct-API workflow",
+    "Routes to the n8n / n8n-mcp skill for editing the Airtable node inside the workflow JSON",
+    "No direct Airtable API calls are made outside the n8n workflow"
+  ],
+  "should_NOT_trigger": true,
+  "_notes": "Negative trigger: Airtable is involved but only as an n8n node inside a workflow — explicitly out of scope per 'When this does not trigger', belongs to the n8n-mcp skill."
+}

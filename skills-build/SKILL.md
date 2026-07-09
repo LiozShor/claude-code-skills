@@ -72,6 +72,7 @@ Do not create a skill when a `CLAUDE.md`/`AGENTS.md` rule covers it, when it is 
 16. Run `bash scripts/validate-skill.sh <path>/SKILL.md` to confirm structural soundness.
 17. **Hard gate.** Run `bash ~/.claude/skills/skill-improver/scripts/review-skill-structure.sh <path>/SKILL.md`. If any MISSING remains, the skill is **not built**. Either fix the section or downgrade the deliverable to "Draft (incomplete)" with structural failures listed at the top of the output.
 18. Review for scope creep and remove generic filler.
+19. **Live trigger test.** Structural validity does NOT prove correct routing. Dispatch a fresh cheap subagent (`model="haiku"`) with the positive-eval query phrased naturally (no slash command, no hints) plus a meta-instruction to report which skill it chose and why. Two possible failures, two different fixes: (a) chose nothing / something else → this skill's description lacks the user's natural symptom phrases — sharpen it; (b) a SIBLING stole the trigger → fix the sibling's description (vague or missing frontmatter acts as a keyword magnet — reference incident: `n8n-mcp` had no frontmatter and stole `agent-debug`'s "n8n agent looping" trigger on the bare word "n8n", 2026-07-03). Re-test after either fix.
 
 ## Dependency
 
@@ -125,6 +126,8 @@ If creating actual files, write them directly to the folder.
 - Do not keep large reference material in `SKILL.md`; move it to `references/`.
 - Do not treat the first version as final. Skills need evaluation and cleanup.
 - Do not place skills under `.agent/skills/`, `docs/`, or any custom directory — Claude Code only auto-loads from `.claude/skills/` (project) and `~/.claude/skills/` (user). A skill outside those paths is dead code.
+- Do not declare the skill done at "structure passes" — a sibling skill with a vague or missing description can still steal its triggers at routing time. Only the live trigger test (step 19) catches this, and the fix is usually on the sibling, not the new skill.
+- Do not put yesterday's harness tool names in `allowed-tools` — verify each name is a current tool (e.g. subagent dispatch was `Task`, now `Agent`); a stale name silently disables that capability.
 
 For long-form gotcha examples and anti-patterns ("Be careful" / "Do a good job" / etc.), see `references/skill-design-reference.md`.
 
@@ -138,7 +141,7 @@ For long-form gotcha examples and anti-patterns ("Be careful" / "Do a good job" 
 
 ## Scripts
 
-- `scripts/validate-skill.sh` — run on the new `SKILL.md` (step 15) to confirm frontmatter, title, trigger/workflow/gotcha sections exist.
+- `scripts/validate-skill.sh` — run on the new `SKILL.md` (step 16) to confirm frontmatter, title, trigger/workflow/gotcha sections exist.
 
 ## Evaluation checklist
 
@@ -153,7 +156,8 @@ For long-form gotcha examples and anti-patterns ("Be careful" / "Do a good job" 
 - Does `scripts/validate-skill.sh` pass on the new file?
 - Can the skill be tested against a real example prompt?
 - Does the skill have an `evals/` folder with ≥3 valid evals (positive trigger, negative trigger, edge case)?
+- Did the live trigger test (step 19) route the natural positive-eval query to this skill — and if a sibling stole it, was the sibling's description fixed and the test re-run?
 
-**Exit criterion.** The skill is not built unless: (1) `validate-skill.sh` passes, (2) `~/.claude/skills/skill-improver/scripts/review-skill-structure.sh` reports zero MISSING, (3) every checklist item above is yes, (4) `evals/` has ≥3 valid entries. If any of the four fails, the deliverable is at most "Draft" and the failures are listed at the top of the output.
+**Exit criterion.** The skill is not built unless: (1) `validate-skill.sh` passes, (2) `~/.claude/skills/skill-improver/scripts/review-skill-structure.sh` reports zero MISSING, (3) every checklist item above is yes, (4) `evals/` has ≥3 valid entries, (5) the live trigger test passed. If any of the five fails, the deliverable is at most "Draft" and the failures are listed at the top of the output.
 
 Curate, do not generate. A useful skill is built from repeated work, tested against real tasks, improved through failures, and deleted when it creates noise.

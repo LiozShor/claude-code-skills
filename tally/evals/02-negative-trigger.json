@@ -1,0 +1,14 @@
+{
+  "$schema": "skill-eval/v1",
+  "name": "write-form-intro-copy",
+  "skill": "tally",
+  "query": "Can you write better wording for the privacy notice paragraph on our Tally intake form? It sounds too formal.",
+  "files": [],
+  "expected_behavior": [
+    "Routes to copywriting (or microcopy for short strings) to draft the improved wording first",
+    "Does not call any Tally MCP tools (load_form/update_text/save_form) purely for drafting prose",
+    "Only reaches for the tally skill's tool-mechanics once the final wording is decided and needs to be pushed into the form"
+  ],
+  "should_NOT_trigger": true,
+  "_notes": "Wording/persuasive copy requests should route to copywriting or microcopy, not the tally structural-edit skill."
+}
